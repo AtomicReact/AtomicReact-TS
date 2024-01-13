@@ -1,0 +1,35 @@
+{
+  "name": "atomicreact-ts",
+  "version": "0.1.0",
+  "description": "AtomicReact is a framework to build web apps with atomicity concept",
+  "main": "dist/atomic.js",
+  "type": "module",
+  "files": [
+    "./dist"
+  ],
+  "scripts": {
+    "build": "rm -rf ./dist && tsc -b tsconfig.json && cp -f ./package.json ./dist/package.json",
+    "docs": "docsify serve ./docs"
+  },
+  "author": "Guihgo",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^18.14.0",
+    "@types/typescript": "^2.0.0",
+    "@types/ws": "^8.5.4",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.3",
+    "postcss": "^8.4.33",
+    "ts-node": "^10.9.1",
+    "ws": "^6.0.0"
+  },
+  "bin": {
+    "atomicreact": "./dist/atomic_cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AtomicReact/AtomicReact.git"
+  }
+}
