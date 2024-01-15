@@ -4,6 +4,7 @@ if (this["PACKAGE_NAME"] == undefined) {
 }
 
 const ATOMIC_REACT = "atomicreact"
+const ATOMIC_REACT_ALIAS = [ATOMIC_REACT, "atomicreact-ts"]
 const DEFINES = "defines"
 const ATOMS = "atoms"
 const LIB = "lib"
@@ -78,7 +79,7 @@ if (require == undefined) {
     function require(moduleName, contextPath = "") {
 
         const moduleParts = moduleName.split("/")
-        if (moduleParts[0] === ATOMIC_REACT) {
+        if (ATOMIC_REACT_ALIAS.includes(moduleParts[0])) {
             if (moduleParts.length == 1) return (this[ATOMIC_REACT][LIB] || this[ATOMIC_REACT])
             else return getValueOfPath(this, moduleParts)
         }
@@ -100,7 +101,7 @@ if (define == undefined) {
 
         let _exports = { "__esModule": true }
 
-        if (moduleName === ATOMIC_REACT && !ATOMIC_REACT[moduleName]) {
+        if (ATOMIC_REACT_ALIAS.includes(moduleName) && !ATOMIC_REACT[moduleName]) {
             func(require, _exports, ...inputs.slice(2).map(i => require(i)))
 
             if (this[ATOMIC_REACT].lib == undefined) {

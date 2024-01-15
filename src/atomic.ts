@@ -162,7 +162,7 @@ export class Atomic {
     const atomicReactModule = "AtomicReact"
     const compilerOptions = Atomic.getTranspileOptions(atomicReactModule.toLowerCase())
     const transpiledCore = transpileModule(readFileSync(resolve(join(__dirname, `lib.js`))).toString(), compilerOptions)
-    appendFileSync(coreBundlePath, transpiledCore.outputText);
+    appendFileSync(coreBundlePath, transpiledCore.outputText)
 
 
     /* Bundle User's Package */
