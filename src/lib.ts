@@ -12,7 +12,7 @@ export interface IAtomicVariables {
 }
 
 export enum EAtomicEvent {
-    LOGIC_LOADED = "<ATOMIC.LOGIC_LOADED>"
+    LOADED = "<ATOMIC.LOADED>"
 }
 export type IAtomicEvents = {
     [key in (keyof typeof EAtomicEvent)]: EAtomicEvent
@@ -49,11 +49,11 @@ export class AtomicReact {
     static onLoad: () => void = null
 
     static ClientVariables: IClientVariables = {
-        Id: "data-atomic-id",
-        Key: "data-atomic-key",
-        Nucleus: "data-atomic-nucleus",
-        Sub: "data-atomic-sub",
-        SubOf: "data-atomic-subof"
+        Id: "data-a-id",
+        Key: "data-a-key",
+        Nucleus: "data-a-nucleus",
+        Sub: "data-a-sub",
+        SubOf: "data-a-subof"
     }
 
     static AtomicVariables: IAtomicVariables = {
@@ -62,7 +62,7 @@ export class AtomicReact {
     }
 
     static AtomicEvents: IAtomicEvents = {
-        LOGIC_LOADED: EAtomicEvent.LOGIC_LOADED
+        LOADED: EAtomicEvent.LOADED
     }
 
     static enableHotReloadOnClient(addrs: string, port: number) {
@@ -79,11 +79,10 @@ export class AtomicReact {
     static makeID(length = 8) {
         let result = ''
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-        const charactersLength = characters.length
         let counter = 0
         while (counter < length) {
-            result += characters.charAt(Math.floor(Math.random() * charactersLength))
-            counter += 1
+            result += characters.charAt(Math.floor(Math.random() * characters.length))
+            counter++
         }
         return result
     }
