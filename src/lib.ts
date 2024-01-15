@@ -49,11 +49,11 @@ export class AtomicReact {
     static onLoad: () => void = null
 
     static ClientVariables: IClientVariables = {
-        Id: "data-a-id",
-        Key: "data-a-key",
-        Nucleus: "data-a-nucleus",
-        Sub: "data-a-sub",
-        SubOf: "data-a-subof"
+        Id: "a-i",
+        Key: "a-k",
+        Nucleus: "a-n",
+        Sub: "a-s",
+        SubOf: "a-sof"
     }
 
     static AtomicVariables: IAtomicVariables = {
@@ -262,7 +262,7 @@ export const JSX = {
                     if (key === AtomicReact.AtomicVariables.Nucleus) return `${AtomicReact.ClientVariables.Nucleus}="${JSX["jsx-runtime"].atom.id}"`
                     const value = props[key]
                     if (key === AtomicReact.AtomicVariables.Sub) return `${AtomicReact.ClientVariables.SubOf}="${JSX["jsx-runtime"].atom.id}" ${AtomicReact.ClientVariables.Sub}="${value}"`
-                    return `${key}="${value}"`
+                    return (atom) ? null : `${key}="${value}"`
                 })
                 .filter(i => i != null)
 

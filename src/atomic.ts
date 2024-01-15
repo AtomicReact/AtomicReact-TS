@@ -195,7 +195,7 @@ export class Atomic {
       parsed.each(node => {
         selectors.push(node['selector'])
         /* ++ ID to selector */
-        node['selector'] = `.${uniqueClassID}${node['selector']}`
+        node['selector'] = `${(node['selector'] as string)[0]}${uniqueClassID}_${(node['selector'] as string).slice(1)}`
       })
 
       const result = parsed.toResult()
