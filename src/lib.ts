@@ -253,7 +253,7 @@ export const JSX = {
                 JSX["jsx-runtime"].atom = Object.assign({}, beforeAtom)
             }
 
-            if(!props["children"]) props["children"] = []
+            if(props["children"] === undefined) props["children"] = []
             if (typeof props["children"] == "string") props["children"] = [props["children"]]
 
             let attributes = Object.keys(props)
