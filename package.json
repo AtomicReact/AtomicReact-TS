@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "build": "rm -rf ./dist && tsc -b tsconfig.json && node ./dist/builder.js",
+    "build:dev": "npm run build development",
     "docs": "docsify serve ./docs"
   },
   "author": "Guihgo",
