@@ -71,3 +71,5 @@ export const success = (obj: string, ...placeholders: any[]) => {
   if (typeof obj === "string") obj = `\x1b[32m${obj}\x1b[0m`
   return log.apply(this, [obj, ...placeholders])
 }
+
+export const tab = "   "

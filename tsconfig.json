@@ -99,15 +99,15 @@
       }
     ]
   },
-  "exclude": [
-    "./*.js",
-    "./init/*.*",
-    "./helper/*.*"
-  ],
   "include": [
     "./src/**.*",
     "./types/**.*",
-    "types/global.d.ts"
+    "types/*.d.ts"
+  ],
+  "exclude": [
+    "./*.js",
+    "./init/*.*",
+    "src/dom_helpers/*.js"
   ],
   "ts-node": {
     "transpileOnly": true,

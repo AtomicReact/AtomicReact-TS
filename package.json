@@ -8,7 +8,7 @@
     "./dist"
   ],
   "scripts": {
-    "build": "rm -rf ./dist && tsc -b tsconfig.json && cp -f ./package.json ./dist/package.json",
+    "build": "rm -rf ./dist && tsc -b tsconfig.json && node ./dist/builder.js",
     "docs": "docsify serve ./docs"
   },
   "author": "Guihgo",
@@ -21,7 +21,9 @@
   },
   "dependencies": {
     "chokidar": "^3.5.3",
+    "cssnano": "^6.0.3",
     "postcss": "^8.4.33",
+    "terser": "^5.26.0",
     "ts-node": "^10.9.1",
     "ws": "^6.0.0"
   },
