@@ -124,29 +124,35 @@ export class Atomic {
       const input = readFileSync(mappedFile.filePath, { encoding: "utf-8" })
 
       let aditionalInfoLog = ""
-      switch (mappedFile.extensionIndex) {
-        case 0: {
-          const { outCSS, outJS, uniqueID } = await this.bundleModuleCSS(input, mappedFile.filePath)
-          appendFileSync(styleBundlePath, outCSS)
-          appendFileSync(bundlePath, outJS)
-          aditionalInfoLog = `as unique ID #${uniqueID}`
-          break
-        }
 
-        case 1: {
-          const { outCSS } = await this.bundleGlobalCSS(input)
-          appendFileSync(styleBundlePath, outCSS)
-          break
-        }
+      try {
+        switch (mappedFile.extensionIndex) {
+          case 0: {
+            const { outCSS, outJS, uniqueID } = await this.bundleModuleCSS(input, mappedFile.filePath)
+            appendFileSync(styleBundlePath, outCSS)
+            appendFileSync(bundlePath, outJS)
+            aditionalInfoLog = `as unique ID #${uniqueID}`
+            break
+          }
 
-        case 2:
-        case 3:
-        case 4:
-        case 5: {
-          const { outJS } = await this.bundleScript(input, mappedFile.filePath)
-          appendFileSync(bundlePath, outJS)
-          break
+          case 1: {
+            const { outCSS } = await this.bundleGlobalCSS(input)
+            appendFileSync(styleBundlePath, outCSS)
+            break
+          }
+
+          case 2:
+          case 3:
+          case 4:
+          case 5: {
+            const { outJS } = await this.bundleScript(input, mappedFile.filePath)
+            appendFileSync(bundlePath, outJS)
+            break
+          }
         }
+      } catch (e) {
+        error(`${tab}├── [X] ${mappedFile.filePath}`, e)
+        return
       }
 
       if (this.config.verbose) log(`${tab}├── [✔] ${mappedFile.filePath}`, aditionalInfoLog);
@@ -154,7 +160,7 @@ export class Atomic {
 
     /* Pos Build */
     appendFileSync(bundlePath, `atomicreact.load();`)
-  
+
     //Bundle dependencies
     // let packageJson = JSON.parse(readFileSync(path.join(process.cwd(), "package.json")).toString());
     // let nodeModulesPath = path.join(process.cwd(), "node_modules");
