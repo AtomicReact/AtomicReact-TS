@@ -165,7 +165,7 @@ export class AtomicClass {
 
 
     constructor(public props?: IProps, public id?: string) {
-        if(!this.props) this.props = {}
+        if (!this.props) this.props = {}
         if (!this.id) this.id = AtomicReact.makeID()
         if (this.props["children"]) delete this.props["children"]
     }
@@ -253,7 +253,7 @@ export const JSX = {
                 JSX["jsx-runtime"].atom = Object.assign({}, beforeAtom)
             }
 
-            if(props["children"] === undefined) props["children"] = []
+            if (props["children"] === undefined) props["children"] = []
             if (typeof props["children"] == "string") props["children"] = [props["children"]]
 
             let attributes = Object.keys(props)
@@ -267,7 +267,8 @@ export const JSX = {
                 .filter(i => i != null)
 
             if (atom) {
-                attributes.push(...[`${AtomicReact.ClientVariables.Key}="${atom.key}"`, `${AtomicReact.ClientVariables.Id}="${atom.id}"`])
+                // attributes.push(...[`${AtomicReact.ClientVariables.Key}="${atom.key}"`, `${AtomicReact.ClientVariables.Id}="${atom.id}"`])
+                attributes.push(...[`${AtomicReact.ClientVariables.Id}="${atom.id}"`])
 
                 /* Nucleus */
                 if (props["children"] && props["children"].length > 0) {
