@@ -1,6 +1,5 @@
 export interface IClientVariables {
     Id: string,
-    Key: string,
     Nucleus: string,
     Sub: string,
     SubOf: string
@@ -21,7 +20,6 @@ export interface IProps {
     [propKey: string]: any
 }
 export interface IAtomic {
-    key: string,
     id: string,
 }
 export interface IAtomicElement extends HTMLElement {
@@ -41,7 +39,6 @@ export class AtomicReact {
 
     static ClientVariables: IClientVariables = {
         Id: "a-i",
-        Key: "a-k",
         Nucleus: "a-n",
         Sub: "a-s",
         SubOf: "a-sof"
@@ -84,8 +81,7 @@ export class AtomicReact {
 
         const beforeAtom = Object.assign({}, JSX["jsx-runtime"].atom)
         JSX["jsx-runtime"].atom = {
-            id: atom.id,
-            key: this["__proto__"]["constructor"]["name"]
+            id: atom.id
         }
 
         let rendered = atom.struct()
@@ -115,7 +111,6 @@ export class AtomicReact {
         /* Define Atomic on root atom */
         rootAtom.Atomic = {
             id: atom.id,
-            key: atom["__proto__"]["constructor"]["name"],
             main: atom
         }
 
@@ -124,7 +119,6 @@ export class AtomicReact {
             /* Define Atomic on rendered atoms */
             atom.Atomic = {
                 id: item.id,
-                key: item.atomicClass["__proto__"]["constructor"]["name"],
                 main: item.atomicClass
             }
             atom.Atomic.main.id = item.id
@@ -227,7 +221,6 @@ export const JSX = {
             let atom: IAtomicElement["Atomic"] = null
             if (typeof source == "function") {
                 atom = {
-                    key: source.name,
                     id: AtomicReact.makeID(),
                     main: null
                 }
