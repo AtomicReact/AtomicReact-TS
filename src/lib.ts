@@ -24,26 +24,17 @@ export interface IAtomic {
     key: string,
     id: string,
 }
-export interface IAtomicElement extends Element {
+export interface IAtomicElement extends HTMLElement {
     Atomic: IAtomic & {
-        main: AtomicClass
+        main: Atom
     }
 }
-export interface IAtom {
-    key: string,
-    struct?: string
-    main?: AtomicClass,
-    mainClass?: typeof AtomicClass,
-}
-
 interface IHotReload {
     addrs: string,
     port: number
 }
 
 export class AtomicReact {
-    static atoms: Array<IAtom> = []
-
     static hotReload: IHotReload
 
     static onLoad: () => void = null
@@ -77,22 +68,41 @@ export class AtomicReact {
     }
 
     static makeID(length = 8) {
-        let result = ''
+        let id = ''
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
         let counter = 0
         while (counter < length) {
-            result += characters.charAt(Math.floor(Math.random() * characters.length))
+            id += characters.charAt(Math.floor(Math.random() * characters.length))
             counter++
         }
-        return result
+        if (AtomicReact.getElement(id)) return AtomicReact.makeID(length)
+        return id
     }
 
-    static renderElement(atomicClass: AtomicClass, domElement: Element, insertPosition?: InsertPosition): IAtomicElement {
+    static render(atom: Atom) {
+        if (!atom.struct) return ""
 
-        const renderedAtom = atomicClass.render(atomicClass.props || {}, {
-            id: atomicClass.id,
-            key: atomicClass["__proto__"]["constructor"]["name"],
-        })
+        const beforeAtom = Object.assign({}, JSX["jsx-runtime"].atom)
+        JSX["jsx-runtime"].atom = {
+            id: atom.id,
+            key: this["__proto__"]["constructor"]["name"]
+        }
+
+        let rendered = atom.struct()
+
+        const tag = rendered.trim()
+        if (tag.startsWith("<") && tag.endsWith(">")) {
+            const posToSplit = (tag.charAt(tag.length - 2) == "/") ? tag.length - 2 : tag.indexOf(">")
+            rendered = `${tag.slice(0, posToSplit)} ${AtomicReact.ClientVariables.Id}="${atom.id}"${tag.slice(posToSplit, tag.length)}`
+        }
+
+        JSX["jsx-runtime"].atom = Object.assign({}, beforeAtom)
+        return rendered
+    }
+
+    static renderElement(atom: Atom, domElement: Element, insertPosition?: InsertPosition): IAtomicElement {
+
+        const renderedAtom = AtomicReact.render(atom)
 
         if (!insertPosition) {
             domElement.innerHTML = renderedAtom
@@ -100,13 +110,13 @@ export class AtomicReact {
             domElement.insertAdjacentHTML(insertPosition, renderedAtom)
         }
 
-        const rootAtom = document.querySelector(`[${AtomicReact.ClientVariables.Id}="${atomicClass.id}"]`) as IAtomicElement
+        const rootAtom = document.querySelector(`[${AtomicReact.ClientVariables.Id}="${atom.id}"]`) as IAtomicElement
 
         /* Define Atomic on root atom */
         rootAtom.Atomic = {
-            id: atomicClass.id,
-            key: atomicClass["__proto__"]["constructor"]["name"],
-            main: atomicClass
+            id: atom.id,
+            key: atom["__proto__"]["constructor"]["name"],
+            main: atom
         }
 
         JSX["jsx-runtime"].queue.reverse().forEach((item) => {
@@ -114,8 +124,8 @@ export class AtomicReact {
             /* Define Atomic on rendered atoms */
             atom.Atomic = {
                 id: item.id,
-                key: item.atomicClass["prototype"]["constructor"]["name"],
-                main: new (item.atomicClass)(item.props, item.id)
+                key: item.atomicClass["__proto__"]["constructor"]["name"],
+                main: item.atomicClass
             }
             atom.Atomic.main.id = item.id
 
@@ -124,97 +134,82 @@ export class AtomicReact {
         })
         JSX["jsx-runtime"].queue = []
 
-        /* Fire onRender on root atom */
+        /* Fire onRender event on root atom */
         rootAtom.Atomic.main.onRender()
-
 
         return rootAtom
     }
 
 
-    static getSub(atomElement: IAtomicElement, subName: string | number): Element {
-        return (atomElement.querySelector(`[${AtomicReact.ClientVariables.SubOf}="${atomElement.getAttribute(AtomicReact.ClientVariables.Id)}"][${AtomicReact.ClientVariables.Sub}="${subName}"]`))
+    static getSub(atom: Atom, subName: string | number): HTMLElement {
+        return document.querySelector(`[${AtomicReact.ClientVariables.SubOf}="${atom.id}"][${AtomicReact.ClientVariables.Sub}="${subName}"]`)
     }
-    static getAtomicSub<T extends AtomicClass>(atomElement: IAtomicElement, subName: string | number): T {
-        return (atomElement.querySelector(`[${AtomicReact.ClientVariables.SubOf}="${atomElement.getAttribute(AtomicReact.ClientVariables.Id)}"][${AtomicReact.ClientVariables.Sub}="${subName}"]`) as IAtomicElement).Atomic.main as T
+    static getAtomicSub(atom: Atom, subName: string | number): Atom {
+        const el = AtomicReact.getSub(atom, subName) as IAtomicElement
+        if (!el || !(el.Atomic) || !(el.Atomic.main)) {
+            return null
+        }
+        return el.Atomic.main
     }
-    static getNucleus(atomElement: IAtomicElement) {
-        return document.querySelector(`[${AtomicReact.ClientVariables.Nucleus}="${atomElement.getAttribute(AtomicReact.ClientVariables.Id)}"]`)
+    static getNucleus(atom: Atom): HTMLElement {
+        return document.querySelector(`[${AtomicReact.ClientVariables.Nucleus}="${atom.id}"]`)
     }
     static getElement(atomId: string): IAtomicElement {
         return document.querySelector(`[${AtomicReact.ClientVariables.Id}="${atomId}"]`) as IAtomicElement
     }
-    static add(atomElement: IAtomicElement, atomicClass: AtomicClass, insertPosition: InsertPosition): IAtomicElement {
+    static add(atom: Atom, atomToInsert: Atom, insertPosition: InsertPosition) {
         insertPosition = insertPosition || "beforeend"
 
-        const nucleusElement = AtomicReact.getNucleus(atomElement)
+        AtomicReact.renderElement(atomToInsert, atom.nucleus, insertPosition)
 
-        const insertedAtom = AtomicReact.renderElement(atomicClass, nucleusElement, insertPosition)
-
-        //notifyAtom onAdded
-        if (atomElement.Atomic.main && atomElement.Atomic.main.onAdded) {
-            atomElement.Atomic.main.onAdded(insertedAtom)
+        /* Fire onAdded event */
+        if (atom.onAdded) {
+            atom.onAdded(atomToInsert)
         }
-
-        return insertedAtom
     }
 }
-export class AtomicClass {
+interface IAtomProps extends IProps {
+    sub?: any,
+    nucleus?: boolean
+}
+interface IAtom {
+    prop?: IAtomProps,
+    sub?: any
+}
+export class Atom<GAtom extends IAtom = IAtom> {
 
-    public struct: (props?: any, atom?: IAtomic) => string = null
+    public struct: () => string = null
 
+    public sub: GAtom["sub"]
 
-    constructor(public props?: IProps, public id?: string) {
-        if (!this.props) this.props = {}
+    constructor(public prop?: GAtom["prop"] | IAtom["prop"], public id?: string) {
+        if (!this.prop) this.prop = {}
         if (!this.id) this.id = AtomicReact.makeID()
-        if (this.props["children"]) delete this.props["children"]
+        if (this.prop["children"]) delete this.prop["children"]
+
+        this.sub = new Proxy({}, {
+            get: (obj, attrName: string) => {
+                return AtomicReact.getAtomicSub(this, attrName) || AtomicReact.getSub(this, attrName) || attrName
+            }
+        })
     }
 
-    render(props?: IProps, atom?: IAtomic): string {
-        if (!this.struct) return ""
-
-        const beforeAtom = Object.assign({}, JSX["jsx-runtime"].atom)
-        JSX["jsx-runtime"].atom = {
-            id: this.id,
-            key: this["__proto__"]["constructor"]["name"]
-        }
-
-        let rendered = this.struct(props, atom)
-
-        const tag = rendered.trim()
-        if (tag.startsWith("<") && tag.endsWith(">")) {
-            const posToSplit = (tag.at(tag.length - 2) == "/") ? tag.length - 2 : tag.indexOf(">")
-            rendered = `${tag.slice(0, posToSplit)} ${AtomicReact.ClientVariables.Key}="${this["__proto__"]["constructor"]["name"]}" ${AtomicReact.ClientVariables.Id}="${this.id}"${tag.slice(posToSplit, tag.length)}`
-        }
-
-        JSX["jsx-runtime"].atom = Object.assign({}, beforeAtom)
-        return rendered
-    }
-
-    getElement(): IAtomicElement {
+    public getElement(): IAtomicElement {
         return AtomicReact.getElement(this.id)
     }
 
-    add(atomicClass: AtomicClass, insertPosition?: InsertPosition): IAtomicElement {
-        return AtomicReact.add(this.getElement(), atomicClass, insertPosition)
+    add(atom: Atom, insertPosition?: InsertPosition) {
+        AtomicReact.add(this, atom, insertPosition)
     }
 
-    getNucleus() {
-        return AtomicReact.getNucleus(this.getElement())
-    }
-
-    getSub(subName: string | number): Element {
-        return AtomicReact.getSub(this.getElement(), subName)
-    }
-
-    getAtomicSub<T extends AtomicClass>(subName: string | number): T {
-        return AtomicReact.getAtomicSub<T>(this.getElement(), subName)
+    get nucleus(): HTMLElement {
+        return AtomicReact.getNucleus(this)
     }
 
     /* Event fired when this Atom is rendered. */
     onRender() { }
     /* Event fired when another Atom is added inside this Atom */
-    onAdded(atomAdded: IAtomicElement) { }
+    onAdded(atom: Atom) { }
 }
 
 export function resolveModuleName(moduleName) {
@@ -224,26 +219,28 @@ export function resolveModuleName(moduleName) {
 export const JSX = {
     ["jsx-runtime"]: {
         atom: null as IAtomic,
-        queue: [] as (Array<{ id: string, atomicClass: typeof AtomicClass, props: IProps }>),
+        queue: [] as (Array<{ id: string, atomicClass: Atom, props: IProps }>),
         jsxs(source: string | Function, props: IProps) {
 
             props = props || {}
 
-            let atom: IAtomic = null
+            let atom: IAtomicElement["Atomic"] = null
             if (typeof source == "function") {
                 atom = {
                     key: source.name,
-                    id: AtomicReact.makeID()
+                    id: AtomicReact.makeID(),
+                    main: null
                 }
 
-                if (source["__proto__"]["name"] && source["__proto__"]["name"] === "AtomicClass") {
-                    let instance = new (source as typeof AtomicClass)(Object.assign({}, props))
+                if (source["__proto__"]["name"] && source["__proto__"]["name"] === "Atom") {
+                    let instance = new (source as typeof Atom)(Object.assign({}, props))
                     instance.id = atom.id
                     JSX["jsx-runtime"].queue.push({
                         id: atom.id,
-                        atomicClass: (source as typeof AtomicClass),
+                        atomicClass: instance,
                         props
                     })
+                    atom.main = instance
                     source = instance.struct ? instance.struct : () => ("")
                 }
 
@@ -267,7 +264,6 @@ export const JSX = {
                 .filter(i => i != null)
 
             if (atom) {
-                // attributes.push(...[`${AtomicReact.ClientVariables.Key}="${atom.key}"`, `${AtomicReact.ClientVariables.Id}="${atom.id}"`])
                 attributes.push(...[`${AtomicReact.ClientVariables.Id}="${atom.id}"`])
 
                 /* Nucleus */
@@ -287,7 +283,7 @@ export const JSX = {
 
             const tag = source.trim()
             if (tag.startsWith("<") && tag.endsWith(">")) {
-                const posToSplit = (tag.at(tag.length - 2) == "/") ? tag.length - 2 : tag.indexOf(">")
+                const posToSplit = (tag.charAt(tag.length - 2) == "/") ? tag.length - 2 : tag.indexOf(">")
                 source = `${tag.slice(0, posToSplit)} ${attributesAsString}${tag.slice(posToSplit, tag.length)}`
             } else {
                 source = `<${source} ${attributesAsString}> ${((props["children"]).join) ? (props["children"]).join("") : (props["children"])}</${source}>`
