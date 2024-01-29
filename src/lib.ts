@@ -19,11 +19,9 @@ export type IAtomicEvents = {
 export interface IProps {
     [propKey: string]: any
 }
-export interface IAtomic {
-    id: string,
-}
+
 export interface IAtomicElement extends HTMLElement {
-    Atomic: IAtomic & {
+    Atomic: {
         main: Atom
     }
 }
@@ -81,7 +79,7 @@ export class AtomicReact {
 
         const beforeAtom = Object.assign({}, JSX["jsx-runtime"].atom)
         JSX["jsx-runtime"].atom = {
-            id: atom.id
+            main: atom
         }
 
         let rendered = atom.struct()
@@ -110,7 +108,6 @@ export class AtomicReact {
 
         /* Define Atomic on root atom */
         rootAtom.Atomic = {
-            id: atom.id,
             main: atom
         }
 
@@ -118,7 +115,6 @@ export class AtomicReact {
             let atom = document.querySelector(`[${AtomicReact.ClientVariables.Id}="${item.id}"]`) as IAtomicElement
             /* Define Atomic on rendered atoms */
             atom.Atomic = {
-                id: item.id,
                 main: item.atomicClass
             }
             atom.Atomic.main.id = item.id
@@ -212,7 +208,7 @@ export function resolveModuleName(moduleName) {
 
 export const JSX = {
     ["jsx-runtime"]: {
-        atom: null as IAtomic,
+        atom: null as IAtomicElement["Atomic"],
         queue: [] as (Array<{ id: string, atomicClass: Atom, props: IProps }>),
         jsxs(source: string | Function, props: IProps) {
 
@@ -221,15 +217,13 @@ export const JSX = {
             let atom: IAtomicElement["Atomic"] = null
             if (typeof source == "function") {
                 atom = {
-                    id: AtomicReact.makeID(),
                     main: null
                 }
 
                 if (source["__proto__"]["name"] && source["__proto__"]["name"] === "Atom") {
                     let instance = new (source as typeof Atom)(Object.assign({}, props))
-                    instance.id = atom.id
                     JSX["jsx-runtime"].queue.push({
-                        id: atom.id,
+                        id: instance.id,
                         atomicClass: instance,
                         props
                     })
@@ -239,7 +233,7 @@ export const JSX = {
 
                 let beforeAtom = Object.assign({}, JSX["jsx-runtime"].atom)
                 JSX["jsx-runtime"].atom = Object.assign({}, atom)
-                source = (source as Function).call(this, props, atom) as string
+                source = (source as Function).call(this) as string
                 JSX["jsx-runtime"].atom = Object.assign({}, beforeAtom)
             }
 
@@ -249,15 +243,15 @@ export const JSX = {
             let attributes = Object.keys(props)
                 .map(key => {
                     if (key === "children") return null
-                    if (key === AtomicReact.AtomicVariables.Nucleus) return `${AtomicReact.ClientVariables.Nucleus}="${JSX["jsx-runtime"].atom.id}"`
+                    if (key === AtomicReact.AtomicVariables.Nucleus) return `${AtomicReact.ClientVariables.Nucleus}="${JSX["jsx-runtime"].atom.main.id}"`
                     const value = props[key]
-                    if (key === AtomicReact.AtomicVariables.Sub) return `${AtomicReact.ClientVariables.SubOf}="${JSX["jsx-runtime"].atom.id}" ${AtomicReact.ClientVariables.Sub}="${value}"`
+                    if (key === AtomicReact.AtomicVariables.Sub) return `${AtomicReact.ClientVariables.SubOf}="${JSX["jsx-runtime"].atom.main.id}" ${AtomicReact.ClientVariables.Sub}="${value}"`
                     return (atom) ? null : `${key}="${value}"`
                 })
                 .filter(i => i != null)
 
             if (atom) {
-                attributes.push(...[`${AtomicReact.ClientVariables.Id}="${atom.id}"`])
+                attributes.push(...[`${AtomicReact.ClientVariables.Id}="${atom.main.id}"`])
 
                 /* Nucleus */
                 if (props["children"] && props["children"].length > 0) {
