@@ -112,12 +112,11 @@ export class AtomicReact {
         }
 
         JSX["jsx-runtime"].queue.reverse().forEach((item) => {
-            let atom = document.querySelector(`[${AtomicReact.ClientVariables.Id}="${item.id}"]`) as IAtomicElement
+            let atom = document.querySelector(`[${AtomicReact.ClientVariables.Id}="${item.atom.id}"]`) as IAtomicElement
             /* Define Atomic on rendered atoms */
             atom.Atomic = {
-                main: item.atomicClass
+                main: item.atom
             }
-            atom.Atomic.main.id = item.id
 
             /* Fire onRender event on rendered atoms */
             if (atom.Atomic.main.onRender) atom.Atomic.main.onRender()
@@ -209,7 +208,7 @@ export function resolveModuleName(moduleName) {
 export const JSX = {
     ["jsx-runtime"]: {
         atom: null as IAtomicElement["Atomic"],
-        queue: [] as (Array<{ id: string, atomicClass: Atom, props: IProps }>),
+        queue: [] as (Array<{ atom: Atom }>),
         jsxs(source: string | Function, props: IProps) {
 
             props = props || {}
@@ -223,9 +222,7 @@ export const JSX = {
                 if (source["__proto__"]["name"] && source["__proto__"]["name"] === "Atom") {
                     let instance = new (source as typeof Atom)(Object.assign({}, props))
                     JSX["jsx-runtime"].queue.push({
-                        id: instance.id,
-                        atomicClass: instance,
-                        props
+                        atom: instance,
                     })
                     atom.main = instance
                     source = instance.struct ? instance.struct : () => ("")
