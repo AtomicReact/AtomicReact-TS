@@ -22,7 +22,7 @@ export interface IProps {
 
 export interface IAtomicElement extends HTMLElement {
     Atomic: {
-        main: Atom
+        atom: Atom
     }
 }
 interface IHotReload {
@@ -51,13 +51,15 @@ export class AtomicReact {
         LOADED: EAtomicEvent.LOADED
     }
 
-    static enableHotReloadOnClient(addrs: string, port: number) {
+    static enableLiveReloadOnClient(host: string = "127.0.0.1", port: number = 1337) {
         if (this["WebSocketClient"] != null && this["WebSocketClient"] != undefined) { return }
-        this["WebSocketClient"] = new WebSocket("ws://" + addrs + ":" + port)
+        this["WebSocketClient"] = new WebSocket("ws://" + host + ":" + port)
         this["WebSocketClient"].onmessage = function (e) {
-            console.log(e.data)
+            console.log("[LiveReload] on message:", e.data)
             if (e.data == "<atomicreact.hotreload.RELOAD>") {
-                location.reload()
+
+                /* getValueOfPath(this[ATOMIC_REACT][ATOMS], ($0.Atomic.atom.__proto__.__factory + "/" + $0.Atomic.atom.constructor.name).split("/")) */
+                // location.reload()
             }
         }
     }
@@ -79,7 +81,7 @@ export class AtomicReact {
 
         const beforeAtom = Object.assign({}, JSX["jsx-runtime"].atom)
         JSX["jsx-runtime"].atom = {
-            main: atom
+            atom: atom
         }
 
         let rendered = atom.struct()
@@ -108,23 +110,23 @@ export class AtomicReact {
 
         /* Define Atomic on root atom */
         rootAtom.Atomic = {
-            main: atom
+            atom: atom
         }
 
         JSX["jsx-runtime"].queue.reverse().forEach((item) => {
             let atom = document.querySelector(`[${AtomicReact.ClientVariables.Id}="${item.atom.id}"]`) as IAtomicElement
             /* Define Atomic on rendered atoms */
             atom.Atomic = {
-                main: item.atom
+                atom: item.atom
             }
 
             /* Fire onRender event on rendered atoms */
-            if (atom.Atomic.main.onRender) atom.Atomic.main.onRender()
+            if (atom.Atomic.atom.onRender) atom.Atomic.atom.onRender()
         })
         JSX["jsx-runtime"].queue = []
 
         /* Fire onRender event on root atom */
-        rootAtom.Atomic.main.onRender()
+        rootAtom.Atomic.atom.onRender()
 
         return rootAtom
     }
@@ -135,10 +137,10 @@ export class AtomicReact {
     }
     static getAtomicSub(atom: Atom, subName: string | number): Atom {
         const el = AtomicReact.getSub(atom, subName) as IAtomicElement
-        if (!el || !(el.Atomic) || !(el.Atomic.main)) {
+        if (!el || !(el.Atomic) || !(el.Atomic.atom)) {
             return null
         }
-        return el.Atomic.main
+        return el.Atomic.atom
     }
     static getNucleus(atom: Atom): HTMLElement {
         return document.querySelector(`[${AtomicReact.ClientVariables.Nucleus}="${atom.id}"]`)
@@ -165,6 +167,13 @@ interface IAtom {
     prop?: IAtomProps,
     sub?: any
 }
+
+// function AtomDec(constructor: Function) {
+//     console.log("AtomDec fired on lib")
+//     constructor.prototype.test = "testing..."
+// }
+
+// @AtomDec
 export class Atom<GAtom extends IAtom = IAtom> {
 
     public struct: () => string = null
@@ -208,7 +217,7 @@ export function resolveModuleName(moduleName) {
 export const JSX = {
     ["jsx-runtime"]: {
         atom: null as IAtomicElement["Atomic"],
-        queue: [] as (Array<{ atom: Atom }>),
+        queue: [] as (Array<{ atom: Atom, moduleName: string }>),
         jsxs(source: string | Function, props: IProps) {
 
             props = props || {}
@@ -216,15 +225,16 @@ export const JSX = {
             let atom: IAtomicElement["Atomic"] = null
             if (typeof source == "function") {
                 atom = {
-                    main: null
+                    atom: null
                 }
 
-                if (source["__proto__"]["name"] && source["__proto__"]["name"] === "Atom") {
+                if (source["__proto__"]["name"] && source["__proto__"]["name"] === Atom.name) {
                     let instance = new (source as typeof Atom)(Object.assign({}, props))
                     JSX["jsx-runtime"].queue.push({
                         atom: instance,
+                        moduleName: source["prototype"]["__moduleName"]
                     })
-                    atom.main = instance
+                    atom.atom = instance
                     source = instance.struct ? instance.struct : () => ("")
                 }
 
@@ -240,15 +250,15 @@ export const JSX = {
             let attributes = Object.keys(props)
                 .map(key => {
                     if (key === "children") return null
-                    if (key === AtomicReact.AtomicVariables.Nucleus) return `${AtomicReact.ClientVariables.Nucleus}="${JSX["jsx-runtime"].atom.main.id}"`
+                    if (key === AtomicReact.AtomicVariables.Nucleus) return `${AtomicReact.ClientVariables.Nucleus}="${JSX["jsx-runtime"].atom.atom.id}"`
                     const value = props[key]
-                    if (key === AtomicReact.AtomicVariables.Sub) return `${AtomicReact.ClientVariables.SubOf}="${JSX["jsx-runtime"].atom.main.id}" ${AtomicReact.ClientVariables.Sub}="${value}"`
+                    if (key === AtomicReact.AtomicVariables.Sub) return `${AtomicReact.ClientVariables.SubOf}="${JSX["jsx-runtime"].atom.atom.id}" ${AtomicReact.ClientVariables.Sub}="${value}"`
                     return (atom) ? null : `${key}="${value}"`
                 })
                 .filter(i => i != null)
 
             if (atom) {
-                attributes.push(...[`${AtomicReact.ClientVariables.Id}="${atom.main.id}"`])
+                attributes.push(...[`${AtomicReact.ClientVariables.Id}="${atom.atom.id}"`])
 
                 /* Nucleus */
                 if (props["children"] && props["children"].length > 0) {

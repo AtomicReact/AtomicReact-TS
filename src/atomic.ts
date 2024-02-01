@@ -1,28 +1,25 @@
-import { appendFileSync, cpSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "fs"
-import path, { dirname, join, parse, ParsedPath, relative, resolve } from "path"
+import { appendFileSync, cpSync, existsSync, readFileSync, writeFileSync } from "node:fs"
+import path, { dirname, join, relative, resolve } from "node:path"
 
 import postcss from "postcss"
 import cssnano from "cssnano"
 import { minify } from "terser"
 
 import { error, log, success, tab, warn } from "./tools/console_io.js"
-import { HotReload } from "./modules/hot_reload.js"
-import { createDirIfNotExist, mapFilesFromDir, readFilesFromDir } from "./tools/file.js"
+import { createDirIfNotExist, mapFilesFromDir } from "./tools/file.js"
 import { fileURLToPath } from "url"
-import TS from "typescript"
-const { transpileModule } = TS;
 import { resolveModuleName } from "./lib.js"
 import { createHash } from "crypto"
-import { ATOMICREACT_CORE_MIN_JS_FILENAME, getTranspileOptions } from "./compile_settings.js"
+import { ATOMICREACT_CORE_MIN_JS_FILENAME, transpileAtom, getTranspileForStyle, ATOMICREACT_GLOBAL } from "./compile_settings.js"
 
 export * from "./lib.js"
 
-export { HotReload } from "./modules/hot_reload.js"
+export { LiveReload } from "./modules/live_reload/index.js"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const __filename = fileURLToPath(import.meta.url)
 
-export interface IBundlerConfig {
+export interface IAtomicConfig {
   packageName: string,
   atomicDir: string,
   bundleDir?: string,
@@ -38,9 +35,10 @@ export interface IBundlerConfig {
 
 export class Atomic {
 
-  static hotReload: HotReload
+  public bundleScriptPath: string
+  public bundleStylePath: string
 
-  constructor(public config: IBundlerConfig, hotReload?: HotReload) {
+  constructor(public config: IAtomicConfig) {
 
     this.config.atomicDir = path.join(process.cwd(), this.config.atomicDir);
     this.config.bundleDir = path.join(process.cwd(), this.config.bundleDir || join(this.config.atomicDir, "bundled"))
@@ -52,24 +50,13 @@ export class Atomic {
 
     if (this.config.verbose === undefined) this.config.verbose = true
     if (this.config.minify === undefined) this.config.minify = { js: true, css: true }
-    if (this.config.JSfileName === undefined) this.config.JSfileName = "atomicreact"
+    if (this.config.JSfileName === undefined) this.config.JSfileName = ATOMICREACT_GLOBAL
     if (this.config.CSSfileName === undefined) this.config.CSSfileName = this.config.JSfileName
     //Create folder if not exist
     createDirIfNotExist(process.cwd(), this.config.bundleDir)
 
-    /* HotReload */
-    Atomic.hotReload = hotReload || null;
-    if (Atomic.hotReload != null) {
-      // log("Atomic.HotReload.webSocketsClients.length: "+Atomic.HotReload.webSocketsClients.length);
-      Atomic.hotReload.watchingFiles = [] //reseta arquivos que ja estavam sendo watcheds
-      //inicial watchs (atomicDir)
-      Atomic.hotReload.addToWatch(this.config.atomicDir)
-      // Atomic.HotReload.addToWatch(process.cwd());
-
-      Atomic.hotReload.getEventEmitter().on('reload', ((msg) => {
-        this.bundle()
-      }))
-    }
+    this.bundleScriptPath = join(this.config.bundleDir, `${this.config.JSfileName}.js`)
+    this.bundleStylePath = join(this.config.bundleDir, `${this.config.CSSfileName}.css`)
   }
 
   async bundle() {
@@ -99,15 +86,10 @@ export class Atomic {
         writeFileSync(jsCorePath, jsCore); */
 
     /* Bundle Core */
-    const bundlePath = join(this.config.bundleDir, `${this.config.JSfileName}${this.config.minify.js ? '.min' : ''}.js`)
-    const styleBundlePath = join(this.config.bundleDir, `${this.config.CSSfileName}${this.config.minify.css ? '.min' : ''}.css`)
-
-    cpSync(resolve(__dirname, ATOMICREACT_CORE_MIN_JS_FILENAME), resolve(bundlePath))
-
-    appendFileSync(bundlePath, `switchPackageName("${this.config.packageName}");`)
+    cpSync(resolve(__dirname, ATOMICREACT_CORE_MIN_JS_FILENAME), resolve(this.bundleScriptPath))
 
     /* Bundle User's Package */
-    writeFileSync(styleBundlePath, "")
+    writeFileSync(this.bundleStylePath, "")
 
     log(`─── Bundling package [${this.config.packageName}]`)
 
@@ -129,15 +111,15 @@ export class Atomic {
         switch (mappedFile.extensionIndex) {
           case 0: {
             const { outCSS, outJS, uniqueID } = await this.bundleModuleCSS(input, mappedFile.filePath)
-            appendFileSync(styleBundlePath, outCSS)
-            appendFileSync(bundlePath, outJS)
+            appendFileSync(this.bundleStylePath, outCSS)
+            appendFileSync(this.bundleScriptPath, outJS)
             aditionalInfoLog = `as unique ID #${uniqueID}`
             break
           }
 
           case 1: {
             const { outCSS } = await this.bundleGlobalCSS(input)
-            appendFileSync(styleBundlePath, outCSS)
+            appendFileSync(this.bundleStylePath, outCSS)
             break
           }
 
@@ -146,7 +128,7 @@ export class Atomic {
           case 4:
           case 5: {
             const { outJS } = await this.bundleScript(input, mappedFile.filePath)
-            appendFileSync(bundlePath, outJS)
+            appendFileSync(this.bundleScriptPath, outJS)
             break
           }
         }
@@ -155,11 +137,13 @@ export class Atomic {
         return
       }
 
-      if (this.config.verbose) log(`${tab}├── [✔] ${mappedFile.filePath}`, aditionalInfoLog);
+      if (this.config.verbose) log(`${tab}├── [✔] ${mappedFile.filePath}`, aditionalInfoLog)
     }
 
     /* Pos Build */
-    appendFileSync(bundlePath, `atomicreact.load();`)
+    appendFileSync(this.bundleScriptPath, `${ATOMICREACT_GLOBAL}.load();`)
+
+
 
     //Bundle dependencies
     // let packageJson = JSON.parse(readFileSync(path.join(process.cwd(), "package.json")).toString());
@@ -220,11 +204,11 @@ export class Atomic {
         tokens[t] = t
       })
     })
-    const relativePath = resolveModuleName(relative(this.config.atomicDir, filePath))
+    const moduleName = resolveModuleName(relative(this.config.atomicDir, filePath))
 
     return {
       outCSS: result.css,
-      outJS: `defineCSS("${relativePath}","${uniqueID}",${JSON.stringify(Object.getOwnPropertyNames(tokens))});`,
+      outJS: getTranspileForStyle(this.config.packageName, moduleName, uniqueID, tokens),
       uniqueID
     }
   }
@@ -241,13 +225,14 @@ export class Atomic {
     }
   }
 
-  async bundleScript(input: string, filePath: string): Promise<{ outJS: string }> {
-    const relativePath = resolveModuleName(relative(this.config.atomicDir, filePath))
-    const transpiled = transpileModule(input, getTranspileOptions(relativePath))
-    const outJS = (await minify(transpiled.outputText, { toplevel: true, compress: true, keep_classnames: true, keep_fnames: false })).code
+  async bundleScript(input: string, filePath: string): Promise<{ outJS: string, moduleName: string }> {
+    const moduleName = resolveModuleName(relative(this.config.atomicDir, filePath))
+    const transpiled = transpileAtom(this.config.packageName, moduleName, input)
+    const outJS = (this.config.minify.js) ? (await minify(transpiled, { toplevel: true, compress: true, keep_classnames: true, keep_fnames: false })).code : transpiled
 
     return {
-      outJS
+      outJS,
+      moduleName
     }
   }
 

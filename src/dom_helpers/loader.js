@@ -1,6 +1,6 @@
 /*<Loader>*/
 /* Define Context Value */
-function defCtxVal(paramName, value, ref = this.__proto__, callback, opts = {}) {
+function defCtxVal(paramName, value, ref = this, callback, opts = {}) {
     if (this[paramName] == undefined) {
         Object.defineProperty(ref, paramName, {
             value,
@@ -14,9 +14,9 @@ defCtxVal("ATOMIC_REACT", "atomicreact")
 defCtxVal("ATOMIC_REACT_ALIAS", [ATOMIC_REACT, "atomicreact-ts"])
 defCtxVal("DEFINES", "defines")
 defCtxVal("ATOMS", "atoms")
+defCtxVal("MODULES", "modules")
 defCtxVal("LIB", "lib")
 defCtxVal("LOAD", "load")
-defCtxVal("PACKAGE_NAME", "PACKAGE_NAME")
 
 defCtxVal(ATOMIC_REACT, {})
 defCtxVal(DEFINES, {}, this[ATOMIC_REACT])
@@ -28,33 +28,9 @@ defCtxVal(LOAD, () => {
         });
     });
     if (Object.keys(this[ATOMIC_REACT][DEFINES]).length == 0) {
-        window.dispatchEvent(new CustomEvent(this[ATOMIC_REACT].lib.AtomicReact.AtomicEvents.LOADED))
+        window.dispatchEvent(new CustomEvent(this[ATOMIC_REACT][LIB].AtomicReact.AtomicEvents.LOADED))
     }
 }, this[ATOMIC_REACT])
-
-defCtxVal("switchPackageName", function (newPackageName, onAtoms = true) {
-
-    Object.defineProperty(this[ATOMIC_REACT], PACKAGE_NAME, { value: newPackageName, configurable: true })
-    if (onAtoms) Object.defineProperty(this[ATOMIC_REACT][ATOMS], newPackageName, { value: {} })
-
-}, undefined, () => { switchPackageName("default", false) })
-
-
-defCtxVal("defineCSS", function (moduleName, uniqueID, tokens) {
-    define(moduleName, ["require", "exports", ATOMIC_REACT], function (require, exports, atomicreact_1) {
-
-        Object.defineProperties(exports, { "__esModule": { value: true }, "default": { value: {} } });
-        tokens
-            .forEach(token => {
-                exports.default[token] = `${uniqueID}_${token}`;
-                Object.defineProperty(exports, token, {
-                    get: function () {
-                        return exports.default[token]
-                    }
-                })
-            })
-    })
-})
 
 defCtxVal("gotoEndOfPath", function (context, next, paths, contextPath = "") {
     if (context[next] == undefined) {
@@ -113,7 +89,7 @@ defCtxVal("require", function (moduleName, contextPath = "") {
         const path = sumPath(contextPath, moduleName)
         const paths = path.split("/")
 
-        return getValueOfPath(this[ATOMIC_REACT][ATOMS][this[ATOMIC_REACT][PACKAGE_NAME]], paths)
+        return getValueOfPath(this[ATOMIC_REACT], paths)
     }
 
     return (this[ATOMIC_REACT][ATOMS][resolveModuleName(moduleName)] || this[ATOMIC_REACT])
@@ -129,13 +105,16 @@ defCtxVal("define", function (moduleName, inputs, func) {
         defCtxVal("lib", _exports, this[ATOMIC_REACT])
         defCtxVal("AtomicReact", this[ATOMIC_REACT].lib.AtomicReact)
         defCtxVal("JSX", this[ATOMIC_REACT].lib.JSX)
-        
+
         return
     }
 
     const paths = moduleName.split("/")
 
-    let { context, path, contextPath } = gotoEndOfPath(this[ATOMIC_REACT][ATOMS], this[ATOMIC_REACT][PACKAGE_NAME], paths)
+    const endOfPath = gotoEndOfPath(this, ATOMIC_REACT, paths)
+    let context = endOfPath.context
+    let path = endOfPath.path
+    let contextPath = endOfPath.contextPath
 
     const imports = [require, _exports, ...inputs.slice(2).map(i => require(i, contextPath))]
 
@@ -171,14 +150,53 @@ defCtxVal("define", function (moduleName, inputs, func) {
     /* Declare this atom */
     Object.defineProperty(context, path, { value: _exports, configurable: true })
 
+    // console.log(`${moduleName} has `, Object.getOwnPropertyNames(_exports))
+    /* Save factory path */
+    Object.getOwnPropertyNames(_exports).forEach(key => {
+        if (_exports[key]["__proto__"] && _exports[key]["__proto__"]["name"] === this[ATOMIC_REACT][LIB].Atom.name) {
+            Object.defineProperty(_exports[key]["prototype"], "__factory", { value: `${moduleName}` })
+        }
+    })
+
+
     if (this[ATOMIC_REACT][DEFINES][moduleName] != undefined) {
         /* ReDefines atoms that are importing this atom */
-        for (let dependent of Object.getOwnPropertyNames(this[ATOMIC_REACT][DEFINES][moduleName])) {
+        let deps = Object.getOwnPropertyNames(this[ATOMIC_REACT][DEFINES][moduleName])
+        for (let i = 0; i < deps.length; i++) {
+            let dependent = deps[i]
             this[ATOMIC_REACT][DEFINES][moduleName][dependent]()
         }
+
+        // for (let dependent of Object.getOwnPropertyNames(this[ATOMIC_REACT][DEFINES][moduleName])) {
+        //     this[ATOMIC_REACT][DEFINES][moduleName][dependent]()
+        // }
         /* Remove from defines */
         delete this[ATOMIC_REACT][DEFINES][moduleName]
     }
 
 }, this)
+/* Define Module */
+defCtxVal("dM", function (moduleName, inputs, func) {
+    return define(`${MODULES}/${moduleName}`, inputs, func)
+})
+/* Define Atoms */
+defCtxVal("dA", function (moduleName, inputs, func) {
+    return define(`${ATOMS}/${moduleName}`, inputs, func)
+})
+/* Define Style  Module CSS */
+defCtxVal("dS", function (moduleName, uniqueID, tokens) {
+    dA(moduleName, ["require", "exports", ATOMIC_REACT], function (require, exports, atomicreact_1) {
+
+        Object.defineProperties(exports, { "__esModule": { value: true }, "default": { value: {} } });
+        tokens
+            .forEach(token => {
+                exports.default[token] = `${uniqueID}_${token}`;
+                Object.defineProperty(exports, token, {
+                    get: function () {
+                        return exports.default[token]
+                    }
+                })
+            })
+    })
+})
 /*</Loader>*/

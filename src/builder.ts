@@ -4,10 +4,11 @@ import { fileURLToPath } from "url"
 import TS from "typescript"
 const { transpileModule } = TS
 import { minify } from "terser"
+import * as esbuild from "esbuild"
 
 import { createDirIfNotExist, readFilesFromDir } from "./tools/file.js"
 import { cpSync, readFileSync, statSync, writeFileSync } from "fs"
-import { ATOMICREACT_CORE_MIN_JS_FILENAME, getTranspileOptions } from "./compile_settings.js"
+import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL, getTranspileOptions } from "./compile_settings.js"
 import { log, success, tab } from "./tools/console_io.js"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -43,7 +44,7 @@ async function build(coreFileName: string) {
     const atomicreactMinifiedPath = resolve(__dirname, coreFileName)
 
     const loaderDOMHelper = readFileSync(resolve(domHelpersPathTo, "loader.js"), { encoding: "utf-8" })
-    const lib = transpileModule(readFileSync(resolve(__dirname, `lib.js`), { encoding: "utf-8" }), getTranspileOptions("atomicreact")).outputText
+    const lib = transpileModule(readFileSync(resolve(__dirname, `lib.js`), { encoding: "utf-8" }), getTranspileOptions(ATOMICREACT_GLOBAL)).outputText
 
     let outJS = ""
 
@@ -66,9 +67,31 @@ async function build(coreFileName: string) {
 
     writeFileSync(atomicreactMinifiedPath, outJS, { encoding: "utf-8" })
 
-    const atomicreactMinifiedStatFile = statSync(atomicreactMinifiedPath)
+    let atomicreactMinifiedStatFile = statSync(atomicreactMinifiedPath)
 
     success(`${tab}└── Built ${atomicreactMinifiedPath} (${atomicreactMinifiedStatFile.size} bytes)`)
+
+    // esbuild.buildSync({
+    //     entryPoints: [atomicreactMinifiedPath],
+    //     target: [
+    //         // 'es2020',
+    //         'chrome49',
+    //         'edge106',
+    //         'firefox86',
+    //         'safari11',
+    //     ],
+    //     minify: (env === Enviroment.Production) ? true : false,
+    //     bundle: true,
+    //     exte
+    //     outfile: atomicreactMinifiedPath,
+    //     allowOverwrite: true
+    // })
+
+    // atomicreactMinifiedStatFile = statSync(atomicreactMinifiedPath)
+
+    // success(`${tab}└── Built with esbuild ${atomicreactMinifiedPath} (${atomicreactMinifiedStatFile.size} bytes)`)
+
+
 
 }
 build(ATOMICREACT_CORE_MIN_JS_FILENAME)
