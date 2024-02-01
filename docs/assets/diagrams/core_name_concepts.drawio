@@ -1,41 +1,68 @@
-<mxfile host="app.diagrams.net" modified="2024-02-01T02:29:42.442Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0" version="23.1.0" etag="4m8HYjhnhNwLUNAE2f99" type="github">
+<mxfile host="app.diagrams.net" modified="2024-02-01T03:04:53.534Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0" etag="JvcTQ7_4kszak_G8ojWE" version="23.1.0" type="github">
   <diagram id="prtHgNgQTEPvFCAcTncT" name="Page-1">
-    <mxGraphModel dx="1223" dy="871" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1643" dy="690" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="dNxyNK7c78bLwvsdeMH5-11" value="Orgchart" style="swimlane;html=1;startSize=20;horizontal=1;containerType=tree;glass=0;" parent="1" vertex="1">
-          <mxGeometry x="40" y="80" width="710" height="290" as="geometry" />
+        <mxCell id="dNxyNK7c78bLwvsdeMH5-11" value="Core Name Concepts" style="swimlane;html=1;startSize=20;horizontal=1;containerType=tree;glass=0;" parent="1" vertex="1">
+          <mxGeometry x="40" y="40" width="760" height="480" as="geometry" />
         </mxCell>
-        <UserObject label="%name%&lt;br&gt;&lt;i style=&quot;color: gray&quot;&gt;%position%&lt;/i&gt;&lt;br&gt;&lt;a href=&quot;mailto:%email%&quot;&gt;Email&lt;/a&gt;" name="Tessa Miller" position="CFO" location="Office 1" email="me@example.com" placeholders="1" link="https://www.draw.io" id="dNxyNK7c78bLwvsdeMH5-12">
-          <mxCell style="label;image=https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-3-128.png;whiteSpace=wrap;html=1;rounded=0;glass=0;treeMoving=1;treeFolding=1;" parent="dNxyNK7c78bLwvsdeMH5-11" vertex="1">
-            <mxGeometry x="260" y="50" width="180" height="70" as="geometry" />
-          </mxCell>
-        </UserObject>
-        <mxCell id="dNxyNK7c78bLwvsdeMH5-13" value="" style="endArrow=blockThin;endFill=1;fontSize=11;edgeStyle=elbowEdgeStyle;elbow=vertical;rounded=0;" parent="dNxyNK7c78bLwvsdeMH5-11" source="dNxyNK7c78bLwvsdeMH5-12" target="dNxyNK7c78bLwvsdeMH5-14" edge="1">
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-2" value="atomic" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="dNxyNK7c78bLwvsdeMH5-11">
+          <mxGeometry x="30" y="45" width="190" height="395" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-11" value="bundler" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="_oh4kCh7GXkGUfhR4k3O-2">
+          <mxGeometry x="10" y="55" width="170" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-18" value="cli" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="_oh4kCh7GXkGUfhR4k3O-2">
+          <mxGeometry x="10" y="175" width="170" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-19" value="builder" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="_oh4kCh7GXkGUfhR4k3O-2">
+          <mxGeometry x="10" y="295" width="170" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-12" value="lib" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="dNxyNK7c78bLwvsdeMH5-11">
+          <mxGeometry x="250" y="45" width="490" height="395" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-7" value="atom" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="_oh4kCh7GXkGUfhR4k3O-12">
+          <mxGeometry x="20" y="55" width="450" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-8" value="prop" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="_oh4kCh7GXkGUfhR4k3O-7">
+          <mxGeometry x="15" y="35" width="115" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-9" value="sub" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="_oh4kCh7GXkGUfhR4k3O-7">
+          <mxGeometry x="168" y="35" width="115" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-10" value="nucleus" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="_oh4kCh7GXkGUfhR4k3O-7">
+          <mxGeometry x="320" y="35" width="115" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-6" value="atomic react" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="_oh4kCh7GXkGUfhR4k3O-12">
+          <mxGeometry x="20" y="235" width="450" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-16" value="render engine" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="_oh4kCh7GXkGUfhR4k3O-6">
+          <mxGeometry x="10" y="35" width="120" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-27" value="modules" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="_oh4kCh7GXkGUfhR4k3O-6">
+          <mxGeometry x="164" y="35" width="120" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-34" value="dom helpers" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="_oh4kCh7GXkGUfhR4k3O-6">
+          <mxGeometry x="320" y="35" width="117.5" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=classic;startFill=1;" edge="1" parent="_oh4kCh7GXkGUfhR4k3O-12" source="_oh4kCh7GXkGUfhR4k3O-6" target="_oh4kCh7GXkGUfhR4k3O-7">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="270" y="192.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="_oh4kCh7GXkGUfhR4k3O-22" target="_oh4kCh7GXkGUfhR4k3O-2">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <UserObject label="%name%&lt;br&gt;&lt;i style=&quot;color: gray&quot;&gt;%position%&lt;/i&gt;&lt;br&gt;&lt;a href=&quot;mailto:%email%&quot;&gt;Email&lt;/a&gt;" name="Edward Morrison" position="Brand Manager" location="Office 2" email="me@example.com" placeholders="1" link="https://www.draw.io" id="dNxyNK7c78bLwvsdeMH5-14">
-          <mxCell style="label;image=https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-10-3-128.png;whiteSpace=wrap;html=1;rounded=0;glass=0;treeFolding=1;treeMoving=1;" parent="dNxyNK7c78bLwvsdeMH5-11" vertex="1">
-            <mxGeometry x="40" y="180" width="180" height="80" as="geometry" />
-          </mxCell>
-        </UserObject>
-        <mxCell id="dNxyNK7c78bLwvsdeMH5-15" value="" style="endArrow=blockThin;endFill=1;fontSize=11;edgeStyle=elbowEdgeStyle;elbow=vertical;rounded=0;" parent="dNxyNK7c78bLwvsdeMH5-11" source="dNxyNK7c78bLwvsdeMH5-12" target="dNxyNK7c78bLwvsdeMH5-16" edge="1">
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-22" value="Frontend DevOps /&lt;div align=&quot;left&quot;&gt;Frontend Arquitech /&lt;br&gt;Frontend Testing/QA&lt;br&gt;&lt;/div&gt;&lt;div align=&quot;left&quot;&gt;&lt;br&gt;&lt;/div&gt;" style="image;aspect=fixed;perimeter=ellipsePerimeter;html=1;align=left;shadow=0;dashed=0;spacingTop=3;image=img/lib/active_directory/user_accounts.svg;" vertex="1" parent="1">
+          <mxGeometry x="140" y="560" width="50" height="48.5" as="geometry" />
+        </mxCell>
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="_oh4kCh7GXkGUfhR4k3O-24" target="_oh4kCh7GXkGUfhR4k3O-12">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <UserObject label="%name%&lt;br&gt;&lt;i style=&quot;color: gray&quot;&gt;%position%&lt;/i&gt;&lt;br&gt;&lt;a href=&quot;mailto:%email%&quot;&gt;Email&lt;/a&gt;" name="Evan Valet" position="HR Director" location="Office 4" email="me@example.com" placeholders="1" link="https://www.draw.io" id="dNxyNK7c78bLwvsdeMH5-16">
-          <mxCell style="label;image=https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-9-2-128.png;whiteSpace=wrap;html=1;rounded=0;glass=0;treeFolding=1;treeMoving=1;" parent="dNxyNK7c78bLwvsdeMH5-11" vertex="1">
-            <mxGeometry x="260" y="180" width="180" height="80" as="geometry" />
-          </mxCell>
-        </UserObject>
-        <mxCell id="dNxyNK7c78bLwvsdeMH5-17" value="" style="endArrow=blockThin;endFill=1;fontSize=11;edgeStyle=elbowEdgeStyle;elbow=vertical;rounded=0;" parent="dNxyNK7c78bLwvsdeMH5-11" source="dNxyNK7c78bLwvsdeMH5-12" target="dNxyNK7c78bLwvsdeMH5-18" edge="1">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="_oh4kCh7GXkGUfhR4k3O-24" value="/ Frontend Developer&lt;br&gt;/ Front-End Engineer&lt;br&gt;UI Designer" style="image;aspect=fixed;perimeter=ellipsePerimeter;html=1;align=right;shadow=0;dashed=0;spacingTop=3;image=img/lib/active_directory/user_accounts.svg;rotatable=1;direction=east;portConstraintRotation=0;container=0;resizeWidth=0;flipH=1;" vertex="1" parent="1">
+          <mxGeometry x="505" y="560" width="60" height="58.2" as="geometry" />
         </mxCell>
-        <UserObject label="%name%&lt;br&gt;&lt;i style=&quot;color: gray&quot;&gt;%position%&lt;/i&gt;&lt;br&gt;&lt;a href=&quot;mailto:%email%&quot;&gt;Email&lt;/a&gt;" name="Alison Donovan" position="System Admin" location="Office 3" email="me@example.com" placeholders="1" link="https://www.draw.io" id="dNxyNK7c78bLwvsdeMH5-18">
-          <mxCell style="label;image=https://cdn3.iconfinder.com/data/icons/user-avatars-1/512/users-2-128.png;whiteSpace=wrap;html=1;rounded=0;glass=0;" parent="dNxyNK7c78bLwvsdeMH5-11" vertex="1">
-            <mxGeometry x="490" y="180" width="180" height="80" as="geometry" />
-          </mxCell>
-        </UserObject>
       </root>
     </mxGraphModel>
   </diagram>
