@@ -9,12 +9,12 @@ import { error, log, success, tab, warn } from "./tools/console_io.js"
 import { createDirIfNotExist, mapFilesFromDir } from "./tools/file.js"
 import { fileURLToPath } from "url"
 import { resolveModuleName } from "./lib.js"
-import { createHash } from "crypto"
-import { ATOMICREACT_CORE_MIN_JS_FILENAME, transpileAtom, getTranspileForStyle, ATOMICREACT_GLOBAL } from "./compile_settings.js"
+import { createHash, Hash } from "crypto"
+import { transpileAtom, transpileStyle, transpileModule } from "./transpile.js"
+import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL } from "./constants.js"
 
 export * from "./lib.js"
-
-export { LiveReload } from "./modules/live_reload/index.js"
+export * from "./modules/index.js"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const __filename = fileURLToPath(import.meta.url)
@@ -32,11 +32,23 @@ export interface IAtomicConfig {
   CSSfileName?: string
 }
 
+export const extensions = [
+  /* 0 */ /\.(atom|module)\.css$/,
+  /* 1 */ /.*(?<!(\.(atom|module)))(\.css)$/,
+  /* 2 */ /\.js$/,
+  /* 3 */ /.*(?<!(\.(d)))(\.ts)$/,
+  /* 4 */ /\.tsx$/,
+  /* 5 */ /\.jsx$/
+]
+
+type BeforeBundleCallback = () => Promise<void>
 
 export class Atomic {
 
   public bundleScriptPath: string
   public bundleStylePath: string
+
+  private todoBeforeBundle: Array<BeforeBundleCallback> = []
 
   constructor(public config: IAtomicConfig) {
 
@@ -59,7 +71,7 @@ export class Atomic {
     this.bundleStylePath = join(this.config.bundleDir, `${this.config.CSSfileName}.css`)
   }
 
-  async bundle() {
+  async bundle(): Promise<{ version: string }> {
     /* Core JS */
     // let exportCoreToClient = {
     //   global: JSON.parse(JSON.stringify(Atomic.global)) as IGlobal, //gambi para clonar objeto
@@ -91,20 +103,18 @@ export class Atomic {
     /* Bundle User's Package */
     writeFileSync(this.bundleStylePath, "")
 
+    await this.doBeforeBundle()
+
     log(`─── Bundling package [${this.config.packageName}]`)
 
-    const mappedFiles = mapFilesFromDir(this.config.atomicDir, [
-      /* 0 */ /\.(atom|module)\.css$/,
-      /* 1 */ /.*(?<!(\.(atom|module)))(\.css)$/,
-      /* 2 */ /\.js$/,
-      /* 3 */ /.*(?<!(\.(d)))(\.ts)$/,
-      /* 4 */ /\.tsx$/,
-      /* 5 */ /\.jsx$/
-    ])
+    const mappedFiles = mapFilesFromDir(this.config.atomicDir, extensions)
+
+    let version: Hash | string = createHash("md5")
 
     for (const mappedFile of mappedFiles) {
       const input = readFileSync(mappedFile.filePath, { encoding: "utf-8" })
 
+      version.update(input)
       let aditionalInfoLog = ""
 
       try {
@@ -172,14 +182,17 @@ export class Atomic {
 
 
     // writeFileSync(styleBundlePath, cssBundle);
+    version = version.digest("hex").slice(0, 7)
 
-    success(`${tab}└── Bundled ${mappedFiles.length} files`)
+    success(`${tab}└── Bundled ${mappedFiles.length} files. Version: #${version}`)
+
+    return { version }
   }
 
   async bundleModuleCSS(input: string, filePath: string): Promise<{ outJS: string, outCSS: string, uniqueID: string }> {
     const uniqueID = `a${createHash("md5")
       .update(filePath)
-      .update(input).digest("hex").slice(0, 7)}`
+      /* .update(input) */.digest("hex").slice(0, 7)}`
 
     const parsed = postcss.parse(input)
 
@@ -208,7 +221,7 @@ export class Atomic {
 
     return {
       outCSS: result.css,
-      outJS: getTranspileForStyle(this.config.packageName, moduleName, uniqueID, tokens),
+      outJS: transpileStyle(this.config.packageName, moduleName, uniqueID, tokens),
       uniqueID
     }
   }
@@ -233,6 +246,46 @@ export class Atomic {
     return {
       outJS,
       moduleName
+    }
+  }
+
+  async bundleModule(input: string, filePath: string, rootPath: string, moduleName: string): Promise<{ outJS: string, moduleName: string }> {
+    moduleName = `${moduleName}/${resolveModuleName(relative(rootPath, filePath))}`
+    const transpiled = transpileModule(moduleName, input)
+    const outJS = (this.config.minify.js) ? (await minify(transpiled, { toplevel: true, compress: true, keep_classnames: true, keep_fnames: false })).code : transpiled
+
+    return {
+      outJS,
+      moduleName
+    }
+  }
+
+  registerModule(moduleName: string, rootModulePath: string, modules: Array<{ relativePath: string, config?: object }>) {
+    this.beforeBundle(async () => {
+      for (const module of modules) {
+        const modulePath = resolve(rootModulePath, module.relativePath)
+        let input = readFileSync(modulePath, { encoding: "utf-8" })
+
+        if (module.config !== undefined) {
+          input += `\n\rexport const __config = Object.assign((__config) ? __config : {}, ${JSON.stringify(module.config)});`
+        }
+
+        const { outJS } = await this.bundleModule(input, modulePath, rootModulePath, moduleName)
+        appendFileSync(this.bundleScriptPath, outJS)
+      }
+
+      if (this.config.verbose) log(`─── [Module/${moduleName}] Registered and bundled`)
+
+    })
+  }
+
+  beforeBundle(todoBeforeLoad: BeforeBundleCallback) {
+    this.todoBeforeBundle.push(todoBeforeLoad)
+  }
+
+  private async doBeforeBundle() {
+    for (let f of this.todoBeforeBundle) {
+      await f()
     }
   }
 

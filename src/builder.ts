@@ -4,12 +4,12 @@ import { fileURLToPath } from "url"
 import TS from "typescript"
 const { transpileModule } = TS
 import { minify } from "terser"
-import * as esbuild from "esbuild"
 
 import { createDirIfNotExist, readFilesFromDir } from "./tools/file.js"
 import { cpSync, readFileSync, statSync, writeFileSync } from "fs"
-import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL, getTranspileOptions } from "./compile_settings.js"
+import { getTranspileOptions } from "./transpile.js"
 import { log, success, tab } from "./tools/console_io.js"
+import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL } from "./constants.js"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const __filename = fileURLToPath(import.meta.url)
@@ -18,6 +18,7 @@ enum Enviroment {
     Development = "development",
     Production = "production"
 }
+
 
 async function build(coreFileName: string) {
 
@@ -70,28 +71,5 @@ async function build(coreFileName: string) {
     let atomicreactMinifiedStatFile = statSync(atomicreactMinifiedPath)
 
     success(`${tab}└── Built ${atomicreactMinifiedPath} (${atomicreactMinifiedStatFile.size} bytes)`)
-
-    // esbuild.buildSync({
-    //     entryPoints: [atomicreactMinifiedPath],
-    //     target: [
-    //         // 'es2020',
-    //         'chrome49',
-    //         'edge106',
-    //         'firefox86',
-    //         'safari11',
-    //     ],
-    //     minify: (env === Enviroment.Production) ? true : false,
-    //     bundle: true,
-    //     exte
-    //     outfile: atomicreactMinifiedPath,
-    //     allowOverwrite: true
-    // })
-
-    // atomicreactMinifiedStatFile = statSync(atomicreactMinifiedPath)
-
-    // success(`${tab}└── Built with esbuild ${atomicreactMinifiedPath} (${atomicreactMinifiedStatFile.size} bytes)`)
-
-
-
 }
 build(ATOMICREACT_CORE_MIN_JS_FILENAME)

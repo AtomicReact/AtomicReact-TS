@@ -22,11 +22,11 @@ defCtxVal(ATOMIC_REACT, {})
 defCtxVal(DEFINES, {}, this[ATOMIC_REACT])
 defCtxVal(ATOMS, {}, this[ATOMIC_REACT])
 defCtxVal(LOAD, () => {
-    window.addEventListener(this[ATOMIC_REACT][LIB].AtomicReact.AtomicEvents.LOADED, function (event) {
-        window.addEventListener("load", function (event) {
-            if (this[ATOMIC_REACT][LIB].AtomicReact.onLoad) { this[ATOMIC_REACT][LIB].AtomicReact.onLoad() }
-        });
-    });
+    window.addEventListener(this[ATOMIC_REACT][LIB].AtomicReact.AtomicEvents.LOADED, function (e) {
+        window.addEventListener("load", function (e) {
+            this[ATOMIC_REACT][LIB].AtomicReact.load()
+        })
+    })
     if (Object.keys(this[ATOMIC_REACT][DEFINES]).length == 0) {
         window.dispatchEvent(new CustomEvent(this[ATOMIC_REACT][LIB].AtomicReact.AtomicEvents.LOADED))
     }
@@ -92,7 +92,7 @@ defCtxVal("require", function (moduleName, contextPath = "") {
         return getValueOfPath(this[ATOMIC_REACT], paths)
     }
 
-    return (this[ATOMIC_REACT][ATOMS][resolveModuleName(moduleName)] || this[ATOMIC_REACT])
+    return (/* this[ATOMIC_REACT][ATOMS][resolveModuleName(moduleName)] || */ this[ATOMIC_REACT])
 })
 
 defCtxVal("define", function (moduleName, inputs, func) {
@@ -139,13 +139,15 @@ defCtxVal("define", function (moduleName, inputs, func) {
         })
     }
 
+    if (importFail) return
+
     try {
         func(...imports)
     } catch (e) {
-        importFail = true
+        // importFail = true
+        return
     }
-
-    if (importFail) return
+    // if (importFail) return
 
     /* Declare this atom */
     Object.defineProperty(context, path, { value: _exports, configurable: true })
@@ -153,7 +155,7 @@ defCtxVal("define", function (moduleName, inputs, func) {
     // console.log(`${moduleName} has `, Object.getOwnPropertyNames(_exports))
     /* Save factory path */
     Object.getOwnPropertyNames(_exports).forEach(key => {
-        if (_exports[key]["__proto__"] && _exports[key]["__proto__"]["name"] === this[ATOMIC_REACT][LIB].Atom.name) {
+        if (_exports[key]["__proto__"] && [this[ATOMIC_REACT][LIB].Atom.name].includes(_exports[key]["__proto__"]["name"])) {
             Object.defineProperty(_exports[key]["prototype"], "__factory", { value: `${moduleName}` })
         }
     })
@@ -175,13 +177,13 @@ defCtxVal("define", function (moduleName, inputs, func) {
     }
 
 }, this)
+/* Define Atom */
+defCtxVal("dA", function (moduleName, inputs, func) {
+    return define(`${ATOMS}/${moduleName}`, inputs, func)
+})
 /* Define Module */
 defCtxVal("dM", function (moduleName, inputs, func) {
     return define(`${MODULES}/${moduleName}`, inputs, func)
-})
-/* Define Atoms */
-defCtxVal("dA", function (moduleName, inputs, func) {
-    return define(`${ATOMS}/${moduleName}`, inputs, func)
 })
 /* Define Style  Module CSS */
 defCtxVal("dS", function (moduleName, uniqueID, tokens) {

@@ -33,7 +33,14 @@ interface IHotReload {
 export class AtomicReact {
     static hotReload: IHotReload
 
-    static onLoad: () => void = null
+    static onLoads: Array<() => void> = []
+    // static onLoad: () => void = null
+    static set onLoad(callback: () => void) {
+        AtomicReact.onLoads.push(callback)
+    }
+    static load() {
+        for (let onLoad of AtomicReact.onLoads) { try { onLoad() } catch (e) { } }
+    }
 
     static ClientVariables: IClientVariables = {
         Id: "a-i",
@@ -49,19 +56,6 @@ export class AtomicReact {
 
     static AtomicEvents: IAtomicEvents = {
         LOADED: EAtomicEvent.LOADED
-    }
-
-    static enableLiveReloadOnClient(host: string = "127.0.0.1", port: number = 1337) {
-        if (this["WebSocketClient"] != null && this["WebSocketClient"] != undefined) { return }
-        this["WebSocketClient"] = new WebSocket("ws://" + host + ":" + port)
-        this["WebSocketClient"].onmessage = function (e) {
-            console.log("[LiveReload] on message:", e.data)
-            if (e.data == "<atomicreact.hotreload.RELOAD>") {
-
-                /* getValueOfPath(this[ATOMIC_REACT][ATOMS], ($0.Atomic.atom.__proto__.__factory + "/" + $0.Atomic.atom.constructor.name).split("/")) */
-                // location.reload()
-            }
-        }
     }
 
     static makeID(length = 8) {
@@ -209,6 +203,15 @@ export class Atom<GAtom extends IAtom = IAtom> {
     /* Event fired when another Atom is added inside this Atom */
     onAdded(atom: Atom) { }
 }
+
+// export class Module<T> {
+//     public __config: T
+//     declare __factory: string
+
+//     public getConfig(): T {
+//         return require(this.__factory) as T
+//     }
+// }
 
 export function resolveModuleName(moduleName) {
     return moduleName.replaceAll("\\", "/").replaceAll("../", "").replaceAll("./", "").replaceAll(".tsx", "").replaceAll(".jsx", "").replaceAll(".ts", "").replaceAll(".js", "")

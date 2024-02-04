@@ -23,7 +23,6 @@
   "dependencies": {
     "chokidar": "^3.5.3",
     "cssnano": "^6.0.3",
-    "esbuild": "^0.19.11",
     "postcss": "^8.4.33",
     "terser": "^5.26.0",
     "ts-node": "^10.9.1",

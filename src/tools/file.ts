@@ -23,7 +23,7 @@ export const copyFile = function (pathFile: string, pastPathFile: string, callba
   })
 }
 
-interface IMapFilesFromDir {
+export interface IMapFilesFromDir {
   filePath: string,
   fileParsed: ParsedPath,
   extensionIndex: number
