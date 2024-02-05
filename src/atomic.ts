@@ -200,8 +200,18 @@ export class Atomic {
     const tokens = {}
     parsed.each(node => {
       selectors.push(node['selector'])
-      /* ++ ID to selector */
-      node['selector'] = `${(node['selector'] as string)[0]}${uniqueID}_${(node['selector'] as string).slice(1)}`
+      /* ++ Unique ID to selector */
+      let selector = ""
+
+      for (const sel of (node['selector'] as string).split(" ")) {
+        if ([".", "#"].includes(sel[0])) {
+          selector += `${sel[0]}${uniqueID}_${sel.slice(1)}` + " "
+        } else {
+          selector += sel
+        }
+
+      }
+      node['selector'] = selector.trim()
     })
 
     const result = parsed.toResult()
