@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import EventEmitter from "node:events"
 import { IncomingMessage } from "node:http"
-import { dirname, resolve } from "node:path"
+import { dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 
 import { WebSocketServer, WebSocket } from "ws"
@@ -11,12 +11,13 @@ import { log } from "../../tools/console_io.js"
 import { Atomic, extensions } from "../../atomic.js"
 import { IClientConfig, IMessageData, CommandType } from "./lib.js"
 import { createHash } from "node:crypto"
+import { LoaderMethods } from "../../constants.js"
 
 export * from "./lib.js"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-export interface ILiveReloadConfig {
+export interface IHotReloadConfig {
   atomic: Atomic
   port?: number,
   host?: string,
@@ -30,7 +31,7 @@ interface IClient {
   port: number
 }
 
-export class LiveReload {
+export class HotReload {
   public eventEmitter: EventEmitter
   id: number = 1
   webSocketServer: WebSocketServer
@@ -38,7 +39,7 @@ export class LiveReload {
   watcher: chokidar.FSWatcher
   watchingPaths: string[] = []
 
-  constructor(public config: ILiveReloadConfig) {
+  constructor(public config: IHotReloadConfig) {
     this.config.port = this.config.port || 1337
     this.config.host = this.config.host || "127.0.0.1"
 
@@ -49,7 +50,7 @@ export class LiveReload {
 
     this.webSocketServer.on("connection", this.onConnection.bind(this))
     this.webSocketServer.on("listening", async () => {
-      if (this.config.verbose) log(`─── [${LiveReload.name}] is listening on ws://${this.config.host}:${this.config.port}`)
+      if (this.config.verbose) log(`─── [${HotReload.name}] is listening on ws://${this.config.host}:${this.config.port}`)
       await this.config.atomic.bundle()
       this.addToWatch(this.config.atomic.config.atomicDir)
     })
@@ -60,19 +61,22 @@ export class LiveReload {
     this.watcher.on('change', (async (filePath, stats) => {
 
       let type: CommandType = null
-      let data = ""
+      let content = undefined
+      let moduleName = undefined
       switch (extensions.findIndex(r => r.test(filePath.toLowerCase()))) {
         case 0:
           type = CommandType.CSS
-          data = (await this.config.atomic.bundleModuleCSS(readFileSync(filePath, { encoding: "utf-8" }), filePath)).outCSS
+          content = (await this.config.atomic.bundleModuleCSS(readFileSync(filePath, { encoding: "utf-8" }), filePath)).outCSS
           break
         case 1:
           type = CommandType.CSS
-          data = (await this.config.atomic.bundleGlobalCSS(readFileSync(filePath, { encoding: "utf-8" }))).outCSS
+          content = (await this.config.atomic.bundleGlobalCSS(readFileSync(filePath, { encoding: "utf-8" }))).outCSS
           break
         case 2: case 3: case 4: case 5:
           type = CommandType.SCRIPT
-          data = (await this.config.atomic.bundleScript(readFileSync(filePath, { encoding: "utf-8" }), filePath)).outJS
+          let r = (await this.config.atomic.bundleScript(readFileSync(filePath, { encoding: "utf-8" }), filePath))
+          content = r.outJS
+          moduleName = `${LoaderMethods.ATOMS}/${this.config.atomic.config.packageName}/${r.moduleName}`
           break
         default:
           return
@@ -83,14 +87,15 @@ export class LiveReload {
         filePath,
         command: {
           type,
-          data
+          content,
+          moduleName
         }
       })
     }))
 
     /* Register LiveReload Module */
     this.config.atomic.registerModule(
-      LiveReload.name, __dirname,
+      HotReload.name, __dirname,
       [
         {
           relativePath: "./lib.js",
@@ -109,13 +114,13 @@ export class LiveReload {
     }
 
     webSocketClient.on("close", ((code, reason) => {
-      if (this.config.verbose) log(`─── [${LiveReload.name}] Client [${client.id}]@${client.ip}:${client.port} closed [code: ${code}]`, reason.toString());
+      if (this.config.verbose) log(`─── [${HotReload.name}] Client [${client.id}]@${client.ip}:${client.port} closed [code: ${code}]`, reason.toString());
       this.clients = this.clients.filter(c => (c.id != client.id))
     }))
 
     this.clients.push(client)
 
-    if (this.config.verbose) log(`─── [${LiveReload.name}] Client [${client.id}]@${client.ip}:${client.port} connected`);
+    if (this.config.verbose) log(`─── [${HotReload.name}] Client [${client.id}]@${client.ip}:${client.port} connected`);
 
     this.id++
 
@@ -123,7 +128,7 @@ export class LiveReload {
       this.sendMessage(client, {
         command: {
           type: CommandType.REFRESH_BUNDLE,
-          data: version
+          content: version
         }
       })
     })
@@ -135,7 +140,7 @@ export class LiveReload {
 
     this.watchingPaths.push(path)
     this.watcher.add(path)
-    if (this.config.verbose) log(`─── [${LiveReload.name}] [+] Watching path: ${path}`);
+    if (this.config.verbose) log(`─── [${HotReload.name}] [+] Watching path: ${path}`);
 
   }
 

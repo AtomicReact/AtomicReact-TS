@@ -189,7 +189,7 @@ export class Atomic {
     return { version }
   }
 
-  async bundleModuleCSS(input: string, filePath: string): Promise<{ outJS: string, outCSS: string, uniqueID: string }> {
+  async bundleModuleCSS(input: string, filePath: string): Promise<{ outJS: string, outCSS: string, uniqueID: string, moduleName: string }> {
     const uniqueID = `a${createHash("md5")
       .update(filePath)
       /* .update(input) */.digest("hex").slice(0, 7)}`
@@ -232,7 +232,8 @@ export class Atomic {
     return {
       outCSS: result.css,
       outJS: transpileStyle(this.config.packageName, moduleName, uniqueID, tokens),
-      uniqueID
+      uniqueID,
+      moduleName
     }
   }
 

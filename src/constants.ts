@@ -6,5 +6,6 @@ export enum LoaderMethods {
     DEFINE_ATOM = "dA",
     DEFINE_MODULE = "dM",
     DEFINE_STYLE = "dS",
-    MODULES = "modules"
+    ATOMS = "atoms",
+    MODULES = "modules",
 }

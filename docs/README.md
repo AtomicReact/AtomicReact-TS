@@ -12,7 +12,7 @@ AtomicReact is a framework to build Web Apps with atomicity concept
 4. DCinDOM: Direct changes in DOM
 5. CSS modules
 6. Shallow learning curve
-7. 
+7. Modular HotReload: fast refresh / no hard reload
 
 
 ## Requirements

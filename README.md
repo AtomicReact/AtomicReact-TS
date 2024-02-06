@@ -8,7 +8,13 @@ AtomicReact-TS is a framework to build Web Apps with atomicity concept using Typ
 
 ## Features
 
-#TODO
+1. Modular components (Atoms)
+2. Typed (Typescript)
+3. TSX support
+4. DCinDOM: Direct changes in DOM
+5. CSS modules
+6. Shallow learning curve
+7. Modular HotReload: fast refresh / no hard reload
 
 ## Let's Get Started
 

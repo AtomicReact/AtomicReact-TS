@@ -34,12 +34,12 @@ export class AtomicReact {
     static hotReload: IHotReload
 
     static onLoads: Array<() => void> = []
-    // static onLoad: () => void = null
+
     static set onLoad(callback: () => void) {
         AtomicReact.onLoads.push(callback)
     }
     static load() {
-        for (let onLoad of AtomicReact.onLoads) { try { onLoad() } catch (e) { } }
+        for (let i = 0; i < AtomicReact.onLoads.length; i++) { try { AtomicReact.onLoads[i]() } catch (e) { } }
     }
 
     static ClientVariables: IClientVariables = {
@@ -58,13 +58,12 @@ export class AtomicReact {
         LOADED: EAtomicEvent.LOADED
     }
 
-    static makeID(length = 8) {
+    static global: object /* @TODO: to type global atomicreact: {atoms, modules, ...}  */
+
+    static makeID(length = 6) {
         let id = ''
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-        let counter = 0
-        while (counter < length) {
-            id += characters.charAt(Math.floor(Math.random() * characters.length))
-            counter++
+        for (let i = 0; i < length; i++) {
+            id += String.fromCharCode(65 + Math.floor(Math.random() * 25)) /* From A-Z */
         }
         if (AtomicReact.getElement(id)) return AtomicReact.makeID(length)
         return id
@@ -90,14 +89,18 @@ export class AtomicReact {
         return rendered
     }
 
-    static renderElement(atom: Atom, domElement: Element, insertPosition?: InsertPosition): IAtomicElement {
+    static renderElement(atom: Atom, domElement: HTMLElement, insertPosition?: InsertPosition | "replace"): IAtomicElement {
 
         const renderedAtom = AtomicReact.render(atom)
 
         if (!insertPosition) {
             domElement.innerHTML = renderedAtom
         } else {
-            domElement.insertAdjacentHTML(insertPosition, renderedAtom)
+            if (insertPosition !== "replace") {
+                domElement.insertAdjacentHTML(insertPosition as InsertPosition, renderedAtom)
+            } else {
+                domElement.outerHTML = renderedAtom
+            }
         }
 
         const rootAtom = document.querySelector(`[${AtomicReact.ClientVariables.Id}="${atom.id}"]`) as IAtomicElement
@@ -162,13 +165,10 @@ interface IAtom {
     sub?: any
 }
 
-// function AtomDec(constructor: Function) {
-//     console.log("AtomDec fired on lib")
-//     constructor.prototype.test = "testing..."
-// }
-
-// @AtomDec
 export class Atom<GAtom extends IAtom = IAtom> {
+
+    declare __factory: string
+    declare __nucleus_children?: string
 
     public struct: () => string = null
 
@@ -184,6 +184,14 @@ export class Atom<GAtom extends IAtom = IAtom> {
                 return AtomicReact.getAtomicSub(this, attrName) || AtomicReact.getSub(this, attrName) || attrName
             }
         })
+        
+        // AtomicReact.global[this.id] = this
+
+        // return new Proxy(this, {
+        //     get: (obj, attrName: string) => {
+        //         return AtomicReact.global[this.id][attrName]
+        //     }
+        // })
     }
 
     public getElement(): IAtomicElement {
@@ -204,15 +212,6 @@ export class Atom<GAtom extends IAtom = IAtom> {
     onAdded(atom: Atom) { }
 }
 
-// export class Module<T> {
-//     public __config: T
-//     declare __factory: string
-
-//     public getConfig(): T {
-//         return require(this.__factory) as T
-//     }
-// }
-
 export function resolveModuleName(moduleName) {
     return moduleName.replaceAll("\\", "/").replaceAll("../", "").replaceAll("./", "").replaceAll(".tsx", "").replaceAll(".jsx", "").replaceAll(".ts", "").replaceAll(".js", "")
 }
@@ -220,7 +219,7 @@ export function resolveModuleName(moduleName) {
 export const JSX = {
     ["jsx-runtime"]: {
         atom: null as IAtomicElement["Atomic"],
-        queue: [] as (Array<{ atom: Atom, moduleName: string }>),
+        queue: [] as (Array<{ atom: Atom }>),
         jsxs(source: string | Function, props: IProps) {
 
             props = props || {}
@@ -231,11 +230,10 @@ export const JSX = {
                     atom: null
                 }
 
-                if (source["__proto__"]["name"] && source["__proto__"]["name"] === Atom.name) {
+                if (Object.getPrototypeOf(source)["name"] && Object.getPrototypeOf(source)["name"] === Atom.name) {
                     let instance = new (source as typeof Atom)(Object.assign({}, props))
                     JSX["jsx-runtime"].queue.push({
-                        atom: instance,
-                        moduleName: source["prototype"]["__moduleName"]
+                        atom: instance
                     })
                     atom.atom = instance
                     source = instance.struct ? instance.struct : () => ("")
@@ -265,6 +263,7 @@ export const JSX = {
 
                 /* Nucleus */
                 if (props["children"] && props["children"].length > 0) {
+                    Object.defineProperty(atom.atom, "__nucleus_children", { value: props["children"].join("") })
                     let regExpNucleusTag = new RegExp('<(.)*' + AtomicReact.ClientVariables.Nucleus + '[^>]*', 'gi')
                     let openEndNucleusTag = -1
                     while (regExpNucleusTag.exec(source)) {

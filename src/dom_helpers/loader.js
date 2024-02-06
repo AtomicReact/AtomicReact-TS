@@ -48,16 +48,16 @@ defCtxVal("gotoEndOfPath", function (context, next, paths, contextPath = "") {
     return gotoEndOfPath(context, next, paths, contextPath)
 })
 
-defCtxVal("getValueOfPath", function getValueOfPath(context, paths) {
-    if (paths.length == 1) {
-        return context[paths[0]] || null
+defCtxVal("getValueOfPath", function getValueOfPath(context, splitedPaths) {
+    if (splitedPaths.length == 1) {
+        return context[splitedPaths[0]] || null
     }
-    const next = paths[0]
+    const next = splitedPaths[0]
     if (context[next] == undefined) {
         return null
     }
-    paths.shift()
-    return getValueOfPath(context[next], paths)
+    splitedPaths.shift()
+    return getValueOfPath(context[next], splitedPaths)
 })
 
 defCtxVal("resolveModuleName", function (moduleName) {
@@ -87,12 +87,14 @@ defCtxVal("require", function (moduleName, contextPath = "") {
     if (moduleName.indexOf("./") >= 0) {
 
         const path = sumPath(contextPath, moduleName)
-        const paths = path.split("/")
-
-        return getValueOfPath(this[ATOMIC_REACT], paths)
+        return new Proxy({ path }, {
+            get: (target, prop) => {
+                return getValueOfPath(window[ATOMIC_REACT], target.path.split("/"))[prop]
+            }
+        })
     }
 
-    return (/* this[ATOMIC_REACT][ATOMS][resolveModuleName(moduleName)] || */ this[ATOMIC_REACT])
+    return (this[ATOMIC_REACT])
 })
 
 defCtxVal("define", function (moduleName, inputs, func) {
@@ -104,6 +106,7 @@ defCtxVal("define", function (moduleName, inputs, func) {
 
         defCtxVal("lib", _exports, this[ATOMIC_REACT])
         defCtxVal("AtomicReact", this[ATOMIC_REACT].lib.AtomicReact)
+        defCtxVal("global", this[ATOMIC_REACT], AtomicReact)
         defCtxVal("JSX", this[ATOMIC_REACT].lib.JSX)
 
         return
@@ -116,7 +119,7 @@ defCtxVal("define", function (moduleName, inputs, func) {
     let path = endOfPath.path
     let contextPath = endOfPath.contextPath
 
-    const imports = [require, _exports, ...inputs.slice(2).map(i => require(i, contextPath))]
+    const imports = [require, _exports, ...inputs.slice(2).map(i => (require(i, contextPath)))]
 
     let importFail = false
     for (let i = 0; i < imports.length; i++) {
@@ -144,22 +147,18 @@ defCtxVal("define", function (moduleName, inputs, func) {
     try {
         func(...imports)
     } catch (e) {
-        // importFail = true
         return
     }
-    // if (importFail) return
 
     /* Declare this atom */
     Object.defineProperty(context, path, { value: _exports, configurable: true })
 
-    // console.log(`${moduleName} has `, Object.getOwnPropertyNames(_exports))
     /* Save factory path */
     Object.getOwnPropertyNames(_exports).forEach(key => {
-        if (_exports[key]["__proto__"] && [this[ATOMIC_REACT][LIB].Atom.name].includes(_exports[key]["__proto__"]["name"])) {
-            Object.defineProperty(_exports[key]["prototype"], "__factory", { value: `${moduleName}` })
+        if ([this[ATOMIC_REACT][LIB].Atom.name].includes(Object.getPrototypeOf(_exports[key])["name"])) {
+            Object.defineProperty(_exports[key].prototype, "__factory", { value: `${moduleName}`, configurable: true })
         }
     })
-
 
     if (this[ATOMIC_REACT][DEFINES][moduleName] != undefined) {
         /* ReDefines atoms that are importing this atom */
