@@ -30,7 +30,7 @@ AtomicReact-TS is a framework to build Web Apps with atomicity concept using Typ
 
 ## TODO
 
-- [ ] Publish on npm
+- [X] Publish on npm
 - [X] HotReload Module
 - [ ] Import and export AtomicReact libraries 
 - [ ] [CLI] --init command: build and web_server scripts
