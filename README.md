@@ -11,14 +11,15 @@ AtomicReact-TS is a framework to build Web Apps with atomicity concept using Typ
 1. Modular components (Atoms)
 2. Typed (Typescript)
 3. TSX support
-4. DCinDOM: Direct changes in DOM
+4. DUinDOM: Direct updates in DOM
 5. CSS modules
 6. Shallow learning curve
-7. Modular HotReload: fast refresh / no hard reload
+7. Modular HotReload: fast refresh - no hard/live reload
+8. Light-weight web framework: ~8.5KBytes  (last build on 07 FEB 24)
 
 ## Let's Get Started
 
-@TODO
+@TODO yet, but you can see a simple project at [https://github.com/AtomicReact/simple-frontend](https://github.com/AtomicReact/simple-frontend)
 
 ## Requirements
 1. [NodeJs](https://nodejs.org)
@@ -26,3 +27,11 @@ AtomicReact-TS is a framework to build Web Apps with atomicity concept using Typ
 ## Documentation
 
 @TODO yet, but you can see a simple project at [https://github.com/AtomicReact/simple-frontend](https://github.com/AtomicReact/simple-frontend)
+
+## TODO
+
+- [ ] Publish on npm
+- [X] HotReload Module
+- [ ] Import and export AtomicReact libraries 
+- [ ] [CLI] --init command: build and web_server scripts
+- [ ] Documentation: Get Started, Basis of AtomicReact (Atom, Styling), Development Guidelines and Playground

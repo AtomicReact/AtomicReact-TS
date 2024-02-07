@@ -1,10 +1,9 @@
 export interface IClientVariables {
-    Id: string,
-    Nucleus: string,
-    Sub: string,
-    SubOf: string
+    Id: "a-i",
+    Nucleus: "a-n",
+    Sub: "a-s",
+    SubOf: "a-sof"
 }
-
 export interface IAtomicVariables {
     Nucleus: string,
     Sub: string
@@ -69,7 +68,7 @@ export class AtomicReact {
         return id
     }
 
-    static render(atom: Atom) {
+    static render(atom: Atom, attrs: { [key: string]: string } = { [AtomicReact.ClientVariables.Id]: atom.id }) {
         if (!atom.struct) return ""
 
         const beforeAtom = Object.assign({}, JSX["jsx-runtime"].atom)
@@ -79,27 +78,35 @@ export class AtomicReact {
 
         let rendered = atom.struct()
 
+        let attributes = ""
+        Object.getOwnPropertyNames(attrs).forEach((attrName) => {
+            attributes += " " + `${attrName}="${attrs[attrName]}"`
+        })
+
         const tag = rendered.trim()
         if (tag.startsWith("<") && tag.endsWith(">")) {
             const posToSplit = (tag.charAt(tag.length - 2) == "/") ? tag.length - 2 : tag.indexOf(">")
-            rendered = `${tag.slice(0, posToSplit)} ${AtomicReact.ClientVariables.Id}="${atom.id}"${tag.slice(posToSplit, tag.length)}`
+            // rendered = `${tag.slice(0, posToSplit)} ${AtomicReact.ClientVariables.Id}="${atom.id}"${tag.slice(posToSplit, tag.length)}`
+            rendered = `${tag.slice(0, posToSplit)}${attributes}${tag.slice(posToSplit, tag.length)}`
         }
 
         JSX["jsx-runtime"].atom = Object.assign({}, beforeAtom)
         return rendered
     }
 
-    static renderElement(atom: Atom, domElement: HTMLElement, insertPosition?: InsertPosition | "replace"): IAtomicElement {
-
-        const renderedAtom = AtomicReact.render(atom)
+    static renderElement(atom: Atom, domElement: HTMLElement, insertPosition?: InsertPosition | "replace", attrs?: { [key: string]: string }): IAtomicElement {
 
         if (!insertPosition) {
-            domElement.innerHTML = renderedAtom
+            domElement.innerHTML = AtomicReact.render(atom, attrs)
         } else {
-            if (insertPosition !== "replace") {
-                domElement.insertAdjacentHTML(insertPosition as InsertPosition, renderedAtom)
+            if (insertPosition === "replace") {
+                if (!domElement.parentNode) throw new Error(`Can't replace element. Element don't have parent node`)
+                domElement.innerHTML = ""
+                const parentElement = document.createElement("div")
+                parentElement.innerHTML = AtomicReact.render(atom, attrs)
+                domElement.parentElement.replaceChild(parentElement.firstChild, domElement)
             } else {
-                domElement.outerHTML = renderedAtom
+                domElement.insertAdjacentHTML(insertPosition as InsertPosition, AtomicReact.render(atom, attrs))
             }
         }
 
@@ -112,6 +119,7 @@ export class AtomicReact {
 
         JSX["jsx-runtime"].queue.reverse().forEach((item) => {
             let atom = document.querySelector(`[${AtomicReact.ClientVariables.Id}="${item.atom.id}"]`) as IAtomicElement
+            if (!atom) return
             /* Define Atomic on rendered atoms */
             atom.Atomic = {
                 atom: item.atom
@@ -133,17 +141,19 @@ export class AtomicReact {
         return document.querySelector(`[${AtomicReact.ClientVariables.SubOf}="${atom.id}"][${AtomicReact.ClientVariables.Sub}="${subName}"]`)
     }
     static getAtomicSub(atom: Atom, subName: string | number): Atom {
-        const el = AtomicReact.getSub(atom, subName) as IAtomicElement
-        if (!el || !(el.Atomic) || !(el.Atomic.atom)) {
-            return null
-        }
-        return el.Atomic.atom
+        return AtomicReact.getAtom(AtomicReact.getSub(atom, subName) as IAtomicElement)
     }
     static getNucleus(atom: Atom): HTMLElement {
         return document.querySelector(`[${AtomicReact.ClientVariables.Nucleus}="${atom.id}"]`)
     }
     static getElement(atomId: string): IAtomicElement {
         return document.querySelector(`[${AtomicReact.ClientVariables.Id}="${atomId}"]`) as IAtomicElement
+    }
+    static getAtom(element: IAtomicElement) {
+        if (!element || !(element.Atomic) || !(element.Atomic.atom)) {
+            return null
+        }
+        return element.Atomic.atom
     }
     static add(atom: Atom, atomToInsert: Atom, insertPosition: InsertPosition) {
         insertPosition = insertPosition || "beforeend"
@@ -184,7 +194,7 @@ export class Atom<GAtom extends IAtom = IAtom> {
                 return AtomicReact.getAtomicSub(this, attrName) || AtomicReact.getSub(this, attrName) || attrName
             }
         })
-        
+
         // AtomicReact.global[this.id] = this
 
         // return new Proxy(this, {

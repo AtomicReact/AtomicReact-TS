@@ -1,6 +1,6 @@
 import { AtomicReact, IAtomicElement } from "../../lib.js"
 
-declare function getValueOfPath(context, paths): Object
+declare function getValueOfPath(context, paths): Object /* Global function defined in dom_helpers/loader.js */
 export interface IClientConfig {
     host?: string,
     port?: number,
@@ -54,7 +54,7 @@ export class Client {
         this.client.onmessage = (e) => {
             try {
                 const msgData = JSON.parse(e.data) as IMessageData
-                console.log("[LiveReload] on message:", msgData)
+                if (__config.verbose) console.log("[LiveReload] on message:", msgData)
 
                 switch (msgData.command.type) {
                     case CommandType.CSS:
@@ -74,20 +74,18 @@ export class Client {
                 }
 
             } catch (e) {
-                console.error(`[LiveReload] Error on message`, e)
+                console.error(`[LiveReload] Client onmessage error`, e)
             }
         }
     }
 
     static redefineScript(moduleName: string, script: string) {
-        console.log(`module name`, moduleName)
-        console.log(`script`, script)
         eval(script)
 
         const context = getValueOfPath(AtomicReact.global, moduleName.split("/"))
-        console.log(`context`, context)
 
         document.querySelectorAll<IAtomicElement>(`[a-i]`).forEach((atomEl) => {
+            if (!atomEl || !atomEl.Atomic || !atomEl.Atomic.atom) return
             const oldAtom = atomEl.Atomic.atom
 
             const factory = Object.getPrototypeOf(oldAtom).__factory
@@ -96,26 +94,18 @@ export class Client {
             const atomKey = oldAtom.constructor.name
             if (context[atomKey] === undefined) return
 
-            const newAtom = new context[atomKey](oldAtom.prop)
+            const newAtom = new context[atomKey](oldAtom.prop, oldAtom.id)
 
             if (oldAtom.__nucleus_children) Object.defineProperty(newAtom, "__nucleus_children", { value: oldAtom.__nucleus_children })
 
-            let attrs = {
-                "a-sof": null,
-                "a-s": null,
-                "a-n": null
-            }
-            Object.getOwnPropertyNames(attrs).forEach((attrName) => {
+            let attrs = {}
+
+            Object.values(AtomicReact.ClientVariables).forEach((attrName) => {
                 const attrValue = oldAtom.getElement().attributes.getNamedItem(attrName)
                 if (attrValue) { attrs[attrName] = attrValue.value }
-                else { delete attrs[attrName] }
             })
 
-            AtomicReact.renderElement(newAtom, oldAtom.getElement(), "replace")
-
-            Object.getOwnPropertyNames(attrs).forEach((attrName) => {
-                newAtom.getElement().setAttribute(attrName, attrs[attrName])
-            })
+            AtomicReact.renderElement(newAtom, oldAtom.getElement(), "replace", attrs)
 
             if (oldAtom.__nucleus_children) newAtom.nucleus.innerHTML = newAtom.__nucleus_children
         })
