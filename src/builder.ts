@@ -8,8 +8,9 @@ import { minify } from "terser"
 import { createDirIfNotExist, readFilesFromDir } from "./tools/file.js"
 import { cpSync, readFileSync, statSync, writeFileSync } from "fs"
 import { getTranspileOptions } from "./transpile.js"
-import { log, success, tab } from "./tools/console_io.js"
+import { error, log, success, tab } from "./tools/console_io.js"
 import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL } from "./constants.js"
+import { exec, execSync, spawn, spawnSync } from "child_process"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const __filename = fileURLToPath(import.meta.url)
@@ -22,9 +23,19 @@ enum Enviroment {
 
 async function build(coreFileName: string) {
 
+    /* Args */
     const env = (process.argv[2]) ? (process.argv[2].toLowerCase() as Enviroment) : Enviroment.Production
+    const toPublish = (process.argv[3] === "publish") ? true : false
 
-    const packageJson = JSON.parse(readFileSync(resolve(__dirname, "../package.json"), { encoding: "utf-8" }))
+    const packageJsonPath = resolve(__dirname, "../package.json")
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, { encoding: "utf-8" }))
+
+    /* Upgrade minor version if is to publish */
+    if (toPublish) {
+        const vSplited = (packageJson.version as string).split(".")
+        packageJson.version = `${vSplited.slice(0, vSplited.length - 1).join(".")}.${Number(vSplited[vSplited.length - 1]) + 1}`
+        writeFileSync(packageJsonPath, JSON.stringify(packageJson, undefined, tab))
+    }
 
     log(`───  [${env}] Building ${packageJson.name}@v${packageJson.version}`)
 
@@ -71,5 +82,13 @@ async function build(coreFileName: string) {
     let atomicreactMinifiedStatFile = statSync(atomicreactMinifiedPath)
 
     success(`${tab}└── Built ${atomicreactMinifiedPath} (${atomicreactMinifiedStatFile.size} bytes)`)
+
+    if (toPublish) {
+        log(`───  [${env}] Publishing ${packageJson.name}@v${packageJson.version}`)
+        const childProc = exec(`cd ${resolve(__dirname, "..")} && npm publish`)
+        childProc.stdout.on("data", (d) => (process.stdout.write(d.toString())))
+        childProc.stderr.on("data", (d) => (process.stdout.write(d.toString())))
+        childProc.on("close", (code) => ((code===0) ? success(`${tab}└── [✔] Published!`) : error(`${tab}└── [X] Not published!`)))
+    }
 }
 build(ATOMICREACT_CORE_MIN_JS_FILENAME)
