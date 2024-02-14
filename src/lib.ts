@@ -184,7 +184,7 @@ export class Atom<GAtom extends IAtom = IAtom> {
 
     public sub: GAtom["sub"]
 
-    constructor(public prop?: GAtom["prop"] | IAtom["prop"], public id?: string) {
+    constructor(public prop?: GAtom["prop"] & IAtom["prop"], public id?: string) {
         if (!this.prop) this.prop = {}
         if (!this.id) this.id = AtomicReact.makeID()
         if (this.prop["children"]) delete this.prop["children"]
