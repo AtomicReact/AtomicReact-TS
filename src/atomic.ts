@@ -199,6 +199,7 @@ export class Atomic {
     const selectors = []
     const tokens = {}
     parsed.each(node => {
+      if(node['selector'] === undefined) return
       selectors.push(node['selector'])
       /* ++ Unique ID to selector */
       let selector = ""
