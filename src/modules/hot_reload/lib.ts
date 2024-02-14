@@ -85,7 +85,7 @@ export class Client {
         const context = getValueOfPath(AtomicReact.global, moduleName.split("/"))
 
         document.querySelectorAll<IAtomicElement>(`[a-i]`).forEach((atomEl) => {
-            if (!atomEl || !atomEl.Atomic || !atomEl.Atomic.atom) return
+            if (!atomEl || !atomEl.Atomic || !atomEl.Atomic.atom || !atomEl.Atomic.atom.getElement() ) return
             const oldAtom = atomEl.Atomic.atom
 
             const factory = Object.getPrototypeOf(oldAtom).__factory
