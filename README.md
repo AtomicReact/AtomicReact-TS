@@ -32,6 +32,6 @@ AtomicReact-TS is a framework to build Web Apps with atomicity concept using Typ
 
 - [X] Publish on npm
 - [X] HotReload Module
-- [ ] Import and export AtomicReact libraries 
+- [X] Import and export AtomicReact libraries 
 - [ ] [CLI] --init command: build and web_server scripts
 - [ ] Documentation: Get Started, Basis of AtomicReact (Atom, Styling), Development Guidelines and Playground

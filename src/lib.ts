@@ -126,12 +126,25 @@ export class AtomicReact {
             }
 
             /* Fire onRender event on rendered atoms */
-            if (atom.Atomic.atom.onRender) atom.Atomic.atom.onRender()
+            if (atom.Atomic.atom.onRender) {
+                try {
+                    atom.Atomic.atom.onRender()
+                } catch (e) {
+                    console.error(e)
+                }
+            }
+
         })
         JSX["jsx-runtime"].queue = []
 
         /* Fire onRender event on root atom */
-        rootAtom.Atomic.atom.onRender()
+        if (rootAtom.Atomic.atom.onRender) {
+            try {
+                rootAtom.Atomic.atom.onRender()
+            } catch (e) {
+                console.error(e)
+            }
+        }
 
         return rootAtom
     }
@@ -220,10 +233,6 @@ export class Atom<GAtom extends IAtom = IAtom> {
     onRender() { }
     /* Event fired when another Atom is added inside this Atom */
     onAdded(atom: Atom) { }
-}
-
-export function resolveModuleName(moduleName) {
-    return moduleName.replaceAll("\\", "/").replaceAll("../", "").replaceAll("./", "").replaceAll(".tsx", "").replaceAll(".jsx", "").replaceAll(".ts", "").replaceAll(".js", "")
 }
 
 export const JSX = {

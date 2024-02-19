@@ -7,11 +7,12 @@ import { fileURLToPath } from "node:url"
 import { WebSocketServer, WebSocket } from "ws"
 import chokidar from "chokidar"
 
-import { log } from "../../tools/console_io.js"
-import { Atomic, extensions } from "../../atomic.js"
+import { error, log, tab } from "../../tools/console_io.js"
+import { Atomic } from "../../atomic.js"
 import { IClientConfig, IMessageData, CommandType } from "./lib.js"
 import { createHash } from "node:crypto"
 import { LoaderMethods } from "../../constants.js"
+import { FileExtensionsPattern, FileType, getFileDescription } from "../../transpile.js"
 
 export * from "./lib.js"
 
@@ -52,7 +53,7 @@ export class HotReload {
     this.webSocketServer.on("listening", async () => {
       if (this.config.verbose) log(`─── [${HotReload.name}] is listening on ws://${this.config.host}:${this.config.port}`)
       await this.config.atomic.bundle()
-      this.addToWatch(this.config.atomic.config.atomicDir)
+      this.addToWatch(this.config.atomic.indexScriptDirPath)
     })
 
     /* Watcher */
@@ -60,37 +61,45 @@ export class HotReload {
 
     this.watcher.on('change', (async (filePath, stats) => {
 
-      let type: CommandType = null
-      let content = undefined
-      let moduleName = undefined
-      switch (extensions.findIndex(r => r.test(filePath.toLowerCase()))) {
-        case 0:
-          type = CommandType.CSS
-          content = (await this.config.atomic.bundleModuleCSS(readFileSync(filePath, { encoding: "utf-8" }), filePath)).outCSS
-          break
-        case 1:
-          type = CommandType.CSS
-          content = (await this.config.atomic.bundleGlobalCSS(readFileSync(filePath, { encoding: "utf-8" }))).outCSS
-          break
-        case 2: case 3: case 4: case 5:
-          type = CommandType.SCRIPT
-          let r = (await this.config.atomic.bundleScript(readFileSync(filePath, { encoding: "utf-8" }), filePath))
-          content = r.outJS
-          moduleName = `${LoaderMethods.ATOMS}/${this.config.atomic.config.packageName}/${r.moduleName}`
-          break
-        default:
-          return
+    const fileDescription = getFileDescription(filePath, this.config.atomic.config.packageName, this.config.atomic.getModuleName(filePath), false)[0]
+
+      try {
+        let type: CommandType = null
+        let content = undefined
+        let moduleName = undefined
+        switch (fileDescription.type) {
+          case FileType.StyleModule:
+            type = CommandType.CSS
+            content = (await this.config.atomic.bundleModuleCSS(readFileSync(filePath, { encoding: "utf-8" }), filePath, fileDescription.fullModuleName)).outCSS
+            break
+          case FileType.NonStyleModule:
+            type = CommandType.CSS
+            content = (await this.config.atomic.bundleGlobalCSS(readFileSync(filePath, { encoding: "utf-8" }))).outCSS
+            break
+          case FileType.ScriptJS: case FileType.ScriptTS: case FileType.ScriptJSX: case FileType.ScriptTSX:
+            type = CommandType.SCRIPT
+            let r = (await this.config.atomic.bundleScript(readFileSync(filePath, { encoding: "utf-8" }), filePath))
+            content = r.outJS
+            moduleName = `${LoaderMethods.ATOMS}/${fileDescription.fullModuleName}`
+            break
+          default:
+            return
+        }
+
+        await this.broadcast({
+          uid: createHash("md5").update(filePath).digest("hex").slice(0, 17),
+          filePath,
+          command: {
+            type,
+            content,
+            moduleName
+          }
+        })
+      } catch (e) {
+        error(`${tab}├── [X] ${filePath}`, e)
+        return
       }
 
-      await this.broadcast({
-        uid: createHash("md5").update(filePath).digest("hex").slice(0, 17),
-        filePath,
-        command: {
-          type,
-          content,
-          moduleName
-        }
-      })
     }))
 
     /* Register LiveReload Module */

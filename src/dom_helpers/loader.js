@@ -60,7 +60,7 @@ defCtxVal("getValueOfPath", function getValueOfPath(context, splitedPaths) {
     return getValueOfPath(context[next], splitedPaths)
 })
 
-defCtxVal("resolveModuleName", function (moduleName) {
+defCtxVal("normalizeModuleName", function (moduleName) {
     return moduleName.replaceAll("../", "").replaceAll("./", "").replaceAll(".tsx", "").replaceAll(".jsx", "").replaceAll(".ts", "").replaceAll(".js", "")
 })
 
@@ -71,9 +71,9 @@ defCtxVal("isLocalModule", function (moduleName) {
 defCtxVal("sumPath", function (absolutePath, relativePath) {
     let absolute = absolutePath.split("/")
     const backTimes = relativePath.split("../").length - 1
-    if (absolute.length <= backTimes) return resolveModuleName(relativePath)
+    if (absolute.length <= backTimes) return normalizeModuleName(relativePath)
     absolute.splice(absolute.length - backTimes)
-    return resolveModuleName(`${absolute.join("/")}${absolutePath == "" ? "" : "/"}${relativePath}`)
+    return normalizeModuleName(`${absolute.join("/")}${absolutePath == "" ? "" : "/"}${relativePath}`)
 })
 
 defCtxVal("require", function (moduleName, contextPath = "") {
@@ -84,17 +84,19 @@ defCtxVal("require", function (moduleName, contextPath = "") {
         else return getValueOfPath(this, moduleParts)
     }
 
+    let path = ""
     if (moduleName.indexOf("./") >= 0) {
-
-        const path = sumPath(contextPath, moduleName)
-        return new Proxy({ path }, {
-            get: (target, prop) => {
-                return getValueOfPath(window[ATOMIC_REACT], target.path.split("/"))[prop]
-            }
-        })
+        path = sumPath(contextPath, moduleName)
+    } else {
+        path = sumPath(ATOMS, moduleName)
     }
 
-    return (this[ATOMIC_REACT])
+    return new Proxy({ path }, {
+        get: (target, prop) => {
+            return getValueOfPath(window[ATOMIC_REACT], target.path.split("/"))[prop]
+        }
+    })
+    // return (this[ATOMIC_REACT])
 })
 
 defCtxVal("define", function (moduleName, inputs, func) {
