@@ -118,7 +118,7 @@ export class Atomic {
       try {
         switch (fileDescription.type) {
           case FileType.StyleModule: {
-            const { outCSS, outJS, uniqueID } = await this.bundleModuleCSS(input, fileDescription.path, fileDescription.fullModuleName)
+            const { outCSS, outJS, uniqueID } = await this.bundleModuleCSS(input, fileDescription.fullModuleName, fileDescription.path)
 
             appendFileSync(this.config.outStyleFilePath, outCSS)
             appendFileSync(this.config.outScriptFilePath, outJS)
@@ -160,7 +160,7 @@ export class Atomic {
     return { version }
   }
 
-  async bundleModuleCSS(input: string, filePath: string, fullModuleName: string): Promise<{ outJS: string, outCSS: string, uniqueID: string}> {
+  async bundleModuleCSS(input: string, fullModuleName: string, filePath: string): Promise<{ outJS: string, outCSS: string, uniqueID: string }> {
 
     const uniqueID = `a${createHash("md5")
       .update(filePath).digest("hex").slice(0, 7)}`
@@ -173,16 +173,12 @@ export class Atomic {
       if (node['selector'] === undefined) return
       selectors.push(node['selector'])
       /* ++ Unique ID to selector */
-      let selector = ""
+      let selector = node['selector'] as string
 
-      for (const sel of (node['selector'] as string).split(" ")) {
-        if ([".", "#"].includes(sel[0])) {
-          selector += `${sel[0]}${uniqueID}_${sel.slice(1)}` + " "
-        } else {
-          selector += " " + sel;
-        }
+      [".", "#"].forEach((key) => {
+        selector = selector.split(key).join(`${key}${uniqueID}_`)
+      })
 
-      }
       node['selector'] = selector.trim()
     })
 
@@ -219,8 +215,8 @@ export class Atomic {
     }
   }
 
-  async bundleScript(input: string, fullModuleName: string): Promise<{ outJS: string}> {
-    
+  async bundleScript(input: string, fullModuleName: string): Promise<{ outJS: string }> {
+
     const transpiled = transpileAtom(fullModuleName, input)
     const outJS = (this.config.minify.js) ? (await minify(transpiled, { toplevel: true, compress: true, keep_classnames: true, keep_fnames: false })).code : transpiled
 
