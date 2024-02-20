@@ -15,17 +15,32 @@ export const __config: IClientConfig = {
 }
 
 export enum CommandType {
-    CSS,
+    STYLE,
     SCRIPT,
     EVAL,
     REFRESH_BUNDLE
 }
+export interface StyleContent {
+    css: string,
+    js?: string
+}
+export interface ScriptContent {
+    js: string,
+    moduleName: string
+}
+export interface EvalContent {
+    js: string
+}
+export interface RefreshContent {
+    version: string
+}
+
+export type CommandContent = ScriptContent | StyleContent | EvalContent | RefreshContent
 
 export type IMessageData = {
     command: {
         type: CommandType,
-        content?: string,
-        moduleName?: string
+        content: CommandContent
     },
     uid?: string
     filePath?: string
@@ -57,17 +72,17 @@ export class Client {
                 if (__config.verbose) console.log("[LiveReload] on message:", msgData)
 
                 switch (msgData.command.type) {
-                    case CommandType.CSS:
-                        this.redefineCSS(msgData.uid, msgData.command.content)
+                    case CommandType.STYLE:
+                        this.redefineCSS(msgData.uid, msgData.command.content as StyleContent)
                         break
                     case CommandType.SCRIPT:
-                        this.redefineScript(msgData.command.moduleName, msgData.command.content)
+                        this.redefineScript(msgData.command.content as ScriptContent)
                         break
                     case CommandType.EVAL:
-                        eval(msgData.command.content)
+                        eval((msgData.command.content as EvalContent).js)
                         break
                     case CommandType.REFRESH_BUNDLE:
-                        this.refreshBundle(msgData.command.content)
+                        this.refreshBundle(msgData.command.content as RefreshContent)
                         break
                     default:
                         break
@@ -79,13 +94,13 @@ export class Client {
         }
     }
 
-    static redefineScript(moduleName: string, script: string) {
-        eval(script)
+    static redefineScript({ js, moduleName }: ScriptContent) {
+        eval(js)
 
         const context = getValueOfPath(AtomicReact.global, moduleName.split("/"))
 
         document.querySelectorAll<IAtomicElement>(`[a-i]`).forEach((atomEl) => {
-            if (!atomEl || !atomEl.Atomic || !atomEl.Atomic.atom || !atomEl.Atomic.atom.getElement() ) return
+            if (!atomEl || !atomEl.Atomic || !atomEl.Atomic.atom || !atomEl.Atomic.atom.getElement()) return
             const oldAtom = atomEl.Atomic.atom
 
             const factory = Object.getPrototypeOf(oldAtom).__factory
@@ -111,7 +126,7 @@ export class Client {
         })
     }
 
-    static redefineCSS(uid: string, css: string) {
+    static redefineCSS(uid: string, { css, js }: StyleContent) {
         let style = document.querySelector(`style[for="${uid}"]`) as HTMLStyleElement
         if (!style) {
             style = document.createElement("style")
@@ -120,9 +135,13 @@ export class Client {
         }
 
         style.innerHTML = css
+
+        if(js) {
+            eval(js)
+        }
     }
 
-    static refreshBundle(version: string) {
+    static refreshBundle({ version }: RefreshContent) {
         function addRandomParam(url: string) {
             const _url = (new URL(url))
             _url.searchParams.append("atomic_react", version)

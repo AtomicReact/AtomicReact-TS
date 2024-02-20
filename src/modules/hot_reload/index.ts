@@ -9,10 +9,10 @@ import chokidar from "chokidar"
 
 import { error, log, tab } from "../../tools/console_io.js"
 import { Atomic } from "../../atomic.js"
-import { IClientConfig, IMessageData, CommandType } from "./lib.js"
+import { IClientConfig, IMessageData, CommandType, CommandContent, StyleContent, ScriptContent, RefreshContent } from "./lib.js"
 import { createHash } from "node:crypto"
 import { LoaderMethods } from "../../constants.js"
-import { FileExtensionsPattern, FileType, getFileDescription } from "../../transpile.js"
+import { FileType, getFileDescription } from "../../transpile.js"
 
 export * from "./lib.js"
 
@@ -61,27 +61,41 @@ export class HotReload {
 
     this.watcher.on('change', (async (filePath, stats) => {
 
-    const fileDescription = getFileDescription(filePath, this.config.atomic.config.packageName, this.config.atomic.getModuleName(filePath), false)[0]
+      const fileDescription = getFileDescription(filePath, this.config.atomic.config.packageName, this.config.atomic.getModuleName(filePath), false)[0]
 
       try {
         let type: CommandType = null
-        let content = undefined
-        let moduleName = undefined
+        let content: CommandContent = undefined
+
+        let input = readFileSync(filePath, { encoding: "utf-8" })
+
         switch (fileDescription.type) {
-          case FileType.StyleModule:
-            type = CommandType.CSS
-            content = (await this.config.atomic.bundleModuleCSS(readFileSync(filePath, { encoding: "utf-8" }), filePath, fileDescription.fullModuleName)).outCSS
+          case FileType.StyleModule: {
+            type = CommandType.STYLE
+            let { outCSS: css, outJS: js } = (await this.config.atomic.bundleModuleCSS(input, fileDescription.fullModuleName, filePath))
+            content = {
+              js,
+              css
+            } as StyleContent
             break
-          case FileType.NonStyleModule:
-            type = CommandType.CSS
-            content = (await this.config.atomic.bundleGlobalCSS(readFileSync(filePath, { encoding: "utf-8" }))).outCSS
+          }
+
+          case FileType.NonStyleModule: {
+            type = CommandType.STYLE
+            let { outCSS: css } = (await this.config.atomic.bundleGlobalCSS(input))
+            content = { js: null, css } as StyleContent
             break
-          case FileType.ScriptJS: case FileType.ScriptTS: case FileType.ScriptJSX: case FileType.ScriptTSX:
+          }
+
+          case FileType.ScriptJS: case FileType.ScriptTS: case FileType.ScriptJSX: case FileType.ScriptTSX: {
             type = CommandType.SCRIPT
-            let r = (await this.config.atomic.bundleScript(readFileSync(filePath, { encoding: "utf-8" }), filePath))
-            content = r.outJS
-            moduleName = `${LoaderMethods.ATOMS}/${fileDescription.fullModuleName}`
+            content = {
+              js: (await this.config.atomic.bundleScript(input, fileDescription.fullModuleName)).outJS,
+              moduleName: `${LoaderMethods.ATOMS}/${fileDescription.fullModuleName}`
+            } as ScriptContent
             break
+          }
+
           default:
             return
         }
@@ -91,8 +105,7 @@ export class HotReload {
           filePath,
           command: {
             type,
-            content,
-            moduleName
+            content
           }
         })
       } catch (e) {
@@ -137,7 +150,7 @@ export class HotReload {
       this.sendMessage(client, {
         command: {
           type: CommandType.REFRESH_BUNDLE,
-          content: version
+          content: { version: version } as RefreshContent
         }
       })
     })
