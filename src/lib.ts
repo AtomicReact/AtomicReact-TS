@@ -69,6 +69,10 @@ export class AtomicReact {
     }
 
     static render(atom: Atom, attrs: { [key: string]: string } = { [AtomicReact.ClientVariables.Id]: atom.id }) {
+        if (atom.preRender) {
+            try { atom.preRender() } catch (e) { console.error(e) }
+        }
+        
         if (!atom.struct) return ""
 
         const beforeAtom = Object.assign({}, JSX["jsx-runtime"].atom)
@@ -195,6 +199,9 @@ export class Atom<GAtom extends IAtom = IAtom> {
 
     public struct: () => string = null
 
+    /* Event fired before this Atom is rendered. */
+    public preRender: () => void
+
     public sub: GAtom["sub"]
 
     constructor(public prop?: GAtom["prop"] & IAtom["prop"], public id?: string) {
@@ -208,13 +215,6 @@ export class Atom<GAtom extends IAtom = IAtom> {
             }
         })
 
-        // AtomicReact.global[this.id] = this
-
-        // return new Proxy(this, {
-        //     get: (obj, attrName: string) => {
-        //         return AtomicReact.global[this.id][attrName]
-        //     }
-        // })
     }
 
     public getElement(): IAtomicElement {
@@ -255,6 +255,9 @@ export const JSX = {
                         atom: instance
                     })
                     atom.atom = instance
+                    if (instance.preRender) {
+                        try { instance.preRender() } catch (e) { console.error(e) }
+                    }
                     source = instance.struct ? instance.struct : () => ("")
                 }
 
