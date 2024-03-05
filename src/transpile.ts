@@ -119,13 +119,21 @@ export const getFileDescription = (filePath: string, packageName: string, module
                 let _packageName = packageName
                 let _moduleName = sumPath(parse(moduleName).dir, specifier)
                 if (!specifier.startsWith(".")) { /* Is a node module package */
-                    const moduleDirPath = resolvePath(process.cwd(), "node_modules", specifier.split("/")[0])
-                    const pkgJsonPath = resolvePath(moduleDirPath, "package.json")
-                    if (existsSync(pkgJsonPath)) {
-                        const pkg = JSON.parse(readFileSync(pkgJsonPath, { encoding: "utf-8" }))
-                        _packageName = pkg.name
-                        _path = resolvePath(moduleDirPath, resolve(pkg, specifier)[0])
-                        _moduleName = normalizeModuleName(specifier.split("/").slice(1).join("/"))
+                    const specifierPaths = specifier.split("/")
+                    const nodeModuleDirPath = resolvePath(process.cwd(), "node_modules")
+                    let moduleDirPath = nodeModuleDirPath
+                    for (let i = 0; i < specifierPaths.length; i++) {
+                        moduleDirPath = resolvePath(moduleDirPath, specifierPaths[i])
+                        const pkgJsonPath = resolvePath(moduleDirPath, "package.json")
+                        if (!existsSync(pkgJsonPath)) {
+                            continue
+                        } else {
+                            const pkg = JSON.parse(readFileSync(pkgJsonPath, { encoding: "utf-8" }))
+                            _packageName = pkg.name
+                            _path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, specifier)[0]) : resolvePath(nodeModuleDirPath, specifier)
+                            _moduleName = normalizeModuleName(specifierPaths.slice(i+1).join("/"))
+                            break
+                        }
                     }
                 }
 
