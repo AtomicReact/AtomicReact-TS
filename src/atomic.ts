@@ -169,18 +169,24 @@ export class Atomic {
 
     const selectors = []
     const tokens = {}
-    parsed.each((node, i) => {
-      if (node['selector'] === undefined) return
-      selectors.push(node['selector'])
-      /* ++ Unique ID to selector */
-      let selector = node['selector'] as string
 
-      [".", "#"].forEach((key) => {
-        selector = selector.split(key).join(`${key}${uniqueID}_`)
-      })
+    function processSelectors(parser: postcss.Root | postcss.AtRule) {
+      parser.each((node, i) => {
+        if (node.type === 'atrule') return processSelectors(node)
+        if (node['selector'] === undefined) return
 
-      node['selector'] = selector.trim()
-    })
+        selectors.push(node['selector'])
+        /* ++ Unique ID to selector */
+        let selector = node['selector'] as string
+
+        [".", "#"].forEach((key) => {
+          selector = selector.split(key).join(`${key}${uniqueID}_`)
+        })
+
+        node['selector'] = selector.trim();
+      });
+    }
+    processSelectors(parsed)
 
     const result = parsed.toResult()
 
