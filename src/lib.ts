@@ -72,7 +72,7 @@ export class AtomicReact {
         if (atom.preRender) {
             try { atom.preRender() } catch (e) { console.error(e) }
         }
-        
+
         if (!atom.struct) return ""
 
         const beforeAtom = Object.assign({}, JSX["jsx-runtime"].atom)
@@ -121,13 +121,20 @@ export class AtomicReact {
             atom: atom
         }
 
-        JSX["jsx-runtime"].queue.reverse().forEach((item) => {
-            let atom = document.querySelector(`[${AtomicReact.ClientVariables.Id}="${item.atom.id}"]`) as IAtomicElement
+        function processQueue() {
+            if (JSX["jsx-runtime"].queue.length === 0) return
+
+            const lastAtom = JSX["jsx-runtime"].queue[JSX["jsx-runtime"].queue.length - 1]
+
+            let atom = document.querySelector(`[${AtomicReact.ClientVariables.Id}="${lastAtom.atom.id}"]`) as IAtomicElement
             if (!atom) return
+
             /* Define Atomic on rendered atoms */
             atom.Atomic = {
-                atom: item.atom
+                atom: lastAtom.atom
             }
+
+            JSX["jsx-runtime"].queue.pop()
 
             /* Fire onRender event on rendered atoms */
             if (atom.Atomic.atom.onRender) {
@@ -138,8 +145,9 @@ export class AtomicReact {
                 }
             }
 
-        })
-        JSX["jsx-runtime"].queue = []
+            processQueue()
+        }
+        processQueue()
 
         /* Fire onRender event on root atom */
         if (rootAtom.Atomic.atom.onRender) {
