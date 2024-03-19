@@ -196,10 +196,12 @@ export class Atomic {
 
     /* Get all tokens */
     selectors.forEach((s: string) => {
-      s.split(/[\s|\.|#]+/).forEach(t => {
-        if (t[0] === "[" || t === "*" || t.indexOf(":") > -1 || t === "") return
-        tokens[t] = t
-      })
+      let matchedAll = s.matchAll(/[\#|\.][^\s|\.|\#|\,|\>|\+|\~]*/g)
+      let token = null
+      while (token = matchedAll.next().value) {
+        token = token[0].slice(1)
+        tokens[token] = token
+      }
     })
 
     return {
