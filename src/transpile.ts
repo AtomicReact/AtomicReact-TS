@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import TS, { ImportDeclaration, TranspileOptions } from "typescript"
 import { ATOMICREACT_GLOBAL, LoaderMethods } from "./constants.js"
 const { ModuleKind, JsxEmit, ScriptTarget, ModuleResolutionKind, transpileModule: transpileModuleTS, createSourceFile, createSourceMapSource, SyntaxKind } = TS
@@ -82,11 +83,15 @@ interface FileDescription {
     type: FileType,
     packageName: string,
     moduleName: string,
-    fullModuleName: string
+    fullModuleName: string,
+    usesCount: number
 }
-export const getFileDescription = (filePath: string, packageName: string, moduleName: string, recursive = true): Array<FileDescription> => {
 
-    const fileDependencies: Array<FileDescription> = []
+interface MapImportTree {
+    [filePathHash: string]: FileDescription
+}
+
+export const mapImportTree = (filePath: string, packageName: string, moduleName: string, recursive = true, mapAccumulator: MapImportTree = {}): MapImportTree => {
 
     let fileType = identifyFileType(filePath)
 
@@ -131,26 +136,36 @@ export const getFileDescription = (filePath: string, packageName: string, module
                             const pkg = JSON.parse(readFileSync(pkgJsonPath, { encoding: "utf-8" }))
                             _packageName = pkg.name
                             _path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, specifier)[0]) : resolvePath(nodeModuleDirPath, specifier)
-                            _moduleName = normalizeModuleName(specifierPaths.slice(i+1).join("/"))
+                            _moduleName = normalizeModuleName(specifierPaths.slice(i + 1).join("/"))
                             break
                         }
                     }
                 }
-
-                fileDependencies.push(...getFileDescription(_path, _packageName, _moduleName))
+                mapAccumulator = mapImportTree(_path, _packageName, _moduleName, recursive, mapAccumulator)
             }
         }
 
         TS.forEachChild(sourceFile, delintNode)
     }
 
-    fileDependencies.push({
-        path: filePath,
-        type: fileType,
-        packageName,
-        moduleName,
-        fullModuleName: getFullModuleName(packageName, moduleName)
-    })
+    const filePathHash = createHash("md5").update(filePath).digest("hex")
+    if (mapAccumulator[filePathHash]) {
+        mapAccumulator[filePathHash].usesCount++
+    }
+    else {
+        mapAccumulator[filePathHash] = {
+            path: filePath,
+            type: fileType,
+            packageName,
+            moduleName,
+            fullModuleName: getFullModuleName(packageName, moduleName),
+            usesCount: 1
+        }
+    }
 
-    return fileDependencies
+    return mapAccumulator
+}
+
+export const listImportTree = (filePath: string, packageName: string, moduleName: string, recursive = true): Array<FileDescription> => {
+    return Object.values(mapImportTree(filePath, packageName, moduleName, recursive))
 }

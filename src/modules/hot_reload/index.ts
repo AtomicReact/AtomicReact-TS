@@ -12,7 +12,7 @@ import { Atomic } from "../../atomic.js"
 import { IClientConfig, IMessageData, CommandType, CommandContent, StyleContent, ScriptContent, RefreshContent } from "./lib.js"
 import { createHash } from "node:crypto"
 import { LoaderMethods } from "../../constants.js"
-import { FileType, getFileDescription } from "../../transpile.js"
+import { FileType, listImportTree } from "../../transpile.js"
 
 export * from "./lib.js"
 
@@ -61,7 +61,7 @@ export class HotReload {
 
     this.watcher.on('change', (async (filePath, stats) => {
 
-      const fileDescription = getFileDescription(filePath, this.config.atomic.config.packageName, this.config.atomic.getModuleName(filePath), false)[0]
+      const fileDescription = listImportTree(filePath, this.config.atomic.config.packageName, this.config.atomic.getModuleName(filePath), false)[0]
 
       try {
         let type: CommandType = null

@@ -8,9 +8,9 @@ import cssnano from "cssnano"
 import { minify } from "terser"
 
 import { error, log, success, tab, warn } from "./tools/console_io.js"
-import { createDirIfNotExist, mapFilesFromDir } from "./tools/file.js"
+import { createDirIfNotExist } from "./tools/file.js"
 import { normalizeModuleName } from "./tools/path.js"
-import { transpileAtom, transpileStyle, transpileModule, getFileDescription, FileType, getFullModuleName } from "./transpile.js"
+import { transpileAtom, transpileStyle, transpileModule, FileType, getFullModuleName, listImportTree } from "./transpile.js"
 import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL } from "./constants.js"
 
 export * from "./lib.js"
@@ -98,7 +98,7 @@ export class Atomic {
 
     writeFileSync(this.config.outStyleFilePath, "")
 
-    const filesDescription = getFileDescription(this.config.indexScriptFilePath, this.config.packageName, this.getModuleName(this.config.indexScriptFilePath))
+    const filesDescription = listImportTree(this.config.indexScriptFilePath, this.config.packageName, this.getModuleName(this.config.indexScriptFilePath))
 
     await this.doBeforeBundle()
 
