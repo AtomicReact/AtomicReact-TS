@@ -43,3 +43,16 @@ export class AtomTwo extends Atom {
     )
 }
 ```
+
+#
+
+### Never create dir with name `atomicreact-ts` for your atoms
+
+```text
+└── RootDir
+    ├── src
+    |   └── atomicreact-ts
+    └── ...
+```
+
+The token `atomicreact-ts` is a reserved word.
