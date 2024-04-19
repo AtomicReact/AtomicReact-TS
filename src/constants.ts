@@ -8,4 +8,5 @@ export enum LoaderMethods {
     DEFINE_STYLE = "dS",
     ATOMS = "atoms",
     MODULES = "modules",
+    BASE_ATOMS = "baseAtoms"
 }

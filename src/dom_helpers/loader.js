@@ -13,6 +13,7 @@ function defCtxVal(paramName, value, ref = this, callback, opts = {}) {
 defCtxVal("ATOMIC_REACT", "atomicreact")
 defCtxVal("ATOMIC_REACT_ALIAS", [ATOMIC_REACT, "atomicreact-ts"])
 defCtxVal("DEFINES", "defines")
+defCtxVal("BASE_ATOMS", "baseAtoms")
 defCtxVal("ATOMS", "atoms")
 defCtxVal("MODULES", "modules")
 defCtxVal("LIB", "lib")
@@ -20,6 +21,7 @@ defCtxVal("LOAD", "load")
 
 defCtxVal(ATOMIC_REACT, {})
 defCtxVal(DEFINES, {}, this[ATOMIC_REACT])
+defCtxVal(BASE_ATOMS, "the_pkg_here", this[ATOMIC_REACT], null, {writable: true})
 defCtxVal(ATOMS, {}, this[ATOMIC_REACT])
 defCtxVal(LOAD, () => {
     window.addEventListener(this[ATOMIC_REACT][LIB].AtomicReact.AtomicEvents.LOADED, function (e) {
@@ -85,10 +87,11 @@ defCtxVal("require", function (moduleName, contextPath = "") {
     }
 
     let path = ""
-    if (moduleName.indexOf("./") >= 0) {
+    if (moduleName.startsWith(".")) {
         path = sumPath(contextPath, moduleName)
     } else {
-        path = sumPath(ATOMS, moduleName)
+        path = sumPath(ATOMS, `${this[ATOMIC_REACT][BASE_ATOMS]}/${moduleName}`)
+        if(!getValueOfPath(this[ATOMIC_REACT], path.split("/"))) path = sumPath(ATOMS, moduleName)
     }
 
     return new Proxy({ path }, {

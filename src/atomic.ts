@@ -10,8 +10,8 @@ import { minify } from "terser"
 import { error, log, success, tab, warn } from "./tools/console_io.js"
 import { createDirIfNotExist } from "./tools/file.js"
 import { normalizeModuleName } from "./tools/path.js"
-import { transpileAtom, transpileStyle, transpileModule, FileType, getFullModuleName, listImportTree } from "./transpile.js"
-import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL } from "./constants.js"
+import { transpileAtom, transpileStyle, transpileModule, FileType, getFullModuleName, listImportTree, getTSConfig } from "./transpile.js"
+import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL, LoaderMethods } from "./constants.js"
 
 export * from "./lib.js"
 export * from "./modules/index.js"
@@ -98,13 +98,18 @@ export class Atomic {
 
     writeFileSync(this.config.outStyleFilePath, "")
 
-    const filesDescription = listImportTree(this.config.indexScriptFilePath, this.config.packageName, this.getModuleName(this.config.indexScriptFilePath))
+    const tsConfig = getTSConfig(process.cwd())
+    const baseURL = (tsConfig && tsConfig.compilerOptions && tsConfig.compilerOptions.baseUrl) ? tsConfig.compilerOptions.baseUrl : null 
+    const filesDescription = listImportTree(this.config.indexScriptFilePath, this.config.packageName, this.getModuleName(this.config.indexScriptFilePath), true, baseURL)
 
     await this.doBeforeBundle()
 
     /* Bundle User's Package */
 
     log(`─── Bundling package [${this.config.packageName}]`)
+
+     /* Pre Bundle */
+     appendFileSync(this.config.outScriptFilePath, `${ATOMICREACT_GLOBAL}.${LoaderMethods.BASE_ATOMS}="${this.config.packageName}";`)
 
     let version: Hash | string = createHash("md5")
 
@@ -149,7 +154,7 @@ export class Atomic {
       if (this.config.verbose) log(`${tab}├── [✔] ${fileDescription.path}`, aditionalInfoLog)
     }
 
-    /* Pos Build */
+    /* Pos Bundle */
 
     appendFileSync(this.config.outScriptFilePath, `${ATOMICREACT_GLOBAL}.load();`)
 

@@ -49,7 +49,8 @@ export const getTranspileOptions = (moduleName: string): TranspileOptions => {
             declaration: false,
             allowJs: true,
             removeComments: true,
-            experimentalDecorators: true
+            experimentalDecorators: true,
+            baseUrl: "./src"
             // sourceMap: true
         }
     }
@@ -78,7 +79,31 @@ export const identifyFileType = (filePath: string): FileType => {
     if (extensionIndex === -1) return FileType.AnyOther
     return extensionIndex
 }
-interface FileDescription {
+
+export const normalizeFilePath = (filePath: string): { type: FileType, filePathAsTS: string } => {
+
+    let type = identifyFileType(filePath)
+    let filePathAsTS = filePath
+    if (!existsSync(filePath)) {
+        switch (type) {
+            case FileType.ScriptJS:
+                type = FileType.ScriptTS
+                filePathAsTS = filePath.replace(FileExtensionsPattern[FileType.ScriptJS], ".ts")
+                break
+            case FileType.ScriptJSX:
+                type = FileType.ScriptTSX
+                filePathAsTS = filePath.replace(FileExtensionsPattern[FileType.ScriptJSX], ".tsx")
+                break
+        }
+    }
+
+    return {
+        type,
+        filePathAsTS
+    }
+}
+
+interface IFileDescription {
     path: string,
     type: FileType,
     packageName: string,
@@ -87,29 +112,17 @@ interface FileDescription {
     usesCount: number
 }
 
-interface MapImportTree {
-    [filePathHash: string]: FileDescription
+interface IMapImportTree {
+    [filePathHash: string]: IFileDescription
 }
 
-export const mapImportTree = (filePath: string, packageName: string, moduleName: string, recursive = true, mapAccumulator: MapImportTree = {}): MapImportTree => {
+export const mapImportTree = (filePath: string, packageName: string, moduleName: string, recursive = true, mapAccumulator: IMapImportTree = {}, baseURL?: TSConfig["compilerOptions"]["baseUrl"]): IMapImportTree => {
 
-    let fileType = identifyFileType(filePath)
+    const { type: fileType, filePathAsTS } = normalizeFilePath(filePath)
 
-    if (!existsSync(filePath)) {
-        switch (fileType) {
-            case FileType.ScriptJS:
-                fileType = FileType.ScriptTS
-                filePath = filePath.replace(FileExtensionsPattern[FileType.ScriptJS], ".ts")
-                break
-            case FileType.ScriptJSX:
-                fileType = FileType.ScriptTSX
-                filePath = filePath.replace(FileExtensionsPattern[FileType.ScriptJSX], ".tsx")
-                break
-        }
-    }
 
     if (recursive && [FileType.ScriptJS, FileType.ScriptJSX, FileType.ScriptTS, FileType.ScriptTSX].includes(fileType)) {
-        const sourceFile = createSourceFile(filePath, readFileSync(filePath, { encoding: "utf-8" }), ScriptTarget.ESNext)
+        const sourceFile = createSourceFile(filePathAsTS, readFileSync(filePathAsTS, { encoding: "utf-8" }), ScriptTarget.ESNext)
 
         function delintNode(node: TS.Node) {
 
@@ -118,43 +131,53 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
 
                 if (specifier === "atomicreact-ts") return
 
-                const parsedFilePath = parse(filePath)
+                const parsedFilePath = parse(filePathAsTS)
 
                 let _path = resolvePath(parsedFilePath.dir, specifier)
                 let _packageName = packageName
                 let _moduleName = sumPath(parse(moduleName).dir, specifier)
-                if (!specifier.startsWith(".")) { /* Is a node module package */
-                    const specifierPaths = specifier.split("/")
-                    const nodeModuleDirPath = resolvePath(process.cwd(), "node_modules")
-                    let moduleDirPath = nodeModuleDirPath
-                    for (let i = 0; i < specifierPaths.length; i++) {
-                        moduleDirPath = resolvePath(moduleDirPath, specifierPaths[i])
-                        const pkgJsonPath = resolvePath(moduleDirPath, "package.json")
-                        if (!existsSync(pkgJsonPath)) {
-                            continue
-                        } else {
-                            const pkg = JSON.parse(readFileSync(pkgJsonPath, { encoding: "utf-8" }))
-                            _packageName = pkg.name
-                            _path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, specifier)[0]) : resolvePath(nodeModuleDirPath, specifier)
-                            _moduleName = normalizeModuleName(specifierPaths.slice(i + 1).join("/"))
-                            break
+                if (!specifier.startsWith(".")) { /* May be node module package OR it's using baseURL */
+
+                    if(baseURL) {
+                        _path = normalizeFilePath(resolvePath(process.cwd(), baseURL, specifier)).filePathAsTS
+                        _moduleName = normalizeModuleName(specifier)
+                    }
+
+                    if (!baseURL || (baseURL && !existsSync(_path))) { /* It's is a node module package */
+                        const specifierPaths = specifier.split("/")
+                        const nodeModuleDirPath = resolvePath(process.cwd(), "node_modules")
+                        let moduleDirPath = nodeModuleDirPath
+                        for (let i = 0; i < specifierPaths.length; i++) {
+                            moduleDirPath = resolvePath(moduleDirPath, specifierPaths[i])
+                            const pkgJsonPath = resolvePath(moduleDirPath, "package.json")
+                            if (!existsSync(pkgJsonPath)) {
+                                continue
+                            } else {
+                                const pkg = JSON.parse(readFileSync(pkgJsonPath, { encoding: "utf-8" }))
+                                _packageName = pkg.name
+                                _path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, specifier)[0]) : resolvePath(nodeModuleDirPath, specifier)
+                                _moduleName = normalizeModuleName(specifierPaths.slice(i + 1).join("/"))
+                                break
+                            }
                         }
                     }
+
+
                 }
-                mapAccumulator = mapImportTree(_path, _packageName, _moduleName, recursive, mapAccumulator)
+                mapAccumulator = mapImportTree(_path, _packageName, _moduleName, recursive, mapAccumulator, baseURL)
             }
         }
 
         TS.forEachChild(sourceFile, delintNode)
     }
 
-    const filePathHash = createHash("md5").update(filePath).digest("hex")
+    const filePathHash = createHash("md5").update(filePathAsTS).digest("hex")
     if (mapAccumulator[filePathHash]) {
         mapAccumulator[filePathHash].usesCount++
     }
     else {
         mapAccumulator[filePathHash] = {
-            path: filePath,
+            path: filePathAsTS,
             type: fileType,
             packageName,
             moduleName,
@@ -166,6 +189,41 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
     return mapAccumulator
 }
 
-export const listImportTree = (filePath: string, packageName: string, moduleName: string, recursive = true): Array<FileDescription> => {
-    return Object.values(mapImportTree(filePath, packageName, moduleName, recursive))
+
+export const listImportTree = (filePath: string, packageName: string, moduleName: string, recursive = true, baseURL?: TSConfig["compilerOptions"]["baseUrl"]): Array<IFileDescription> => {
+    return Object.values(mapImportTree(filePath, packageName, moduleName, recursive, {}, baseURL))
+}
+
+type CompilerOptions = typeof TS.parseCommandLine extends (...args: any[]) => infer TResult ?
+    TResult extends { options: infer TOptions } ? TOptions : never : never;
+
+type TypeAcquisition = typeof TS.parseCommandLine extends (...args: any[]) => infer TResult ?
+    TResult extends { typeAcquisition?: infer TTypeAcquisition } ? TTypeAcquisition : never : never;
+
+interface TSConfig {
+    compilerOptions: CompilerOptions;
+    exclude: string[];
+    compileOnSave: boolean;
+    extends: string;
+    files: string[];
+    include: string[];
+    typeAcquisition: TypeAcquisition
+}
+
+
+export const getTSConfig = (rootDir: string): TSConfig | null => {
+    const tsConfigPath = resolvePath(rootDir, "tsconfig.json")
+
+    if (!existsSync(tsConfigPath)) return null
+
+    try {
+        const { config, error } = TS.readConfigFile(tsConfigPath, TS.sys.readFile)
+        if (error) throw error
+        // const tsConfig = JSON.parse(readFileSync(tsConfigPath, { encoding: "utf-8" })) as TSConfig
+
+        return config
+    } catch (e) {
+        console.error(e)
+        return null
+    }
 }

@@ -15,7 +15,7 @@ AtomicReact-TS is a framework to build Web Apps with atomicity concept using Typ
 5. CSS modules
 6. Shallow learning curve
 7. Modular HotReload: fast refresh - no hard/live reload
-8. Light-weight web framework: ~8.5KBytes  (last build on 07 FEB 24)
+8. Light-weight web framework: ~8.8 KBytes  (last build)
 
 ## Let's Get Started
 
@@ -33,5 +33,7 @@ AtomicReact-TS is a framework to build Web Apps with atomicity concept using Typ
 - [X] Publish on npm
 - [X] HotReload Module
 - [X] Import and export AtomicReact libraries 
+- [X] Support to Relative Paths (`./some/path/import/file.tsx`)
+- [X] Support to Absolute Paths (`some/path/import/file.tsx`) - Support working with `baseUrl` of `tsconfig.json > compilerOptions`
 - [ ] [CLI] --init command: build and web_server scripts
 - [ ] Documentation: Get Started, Basis of AtomicReact (Atom, Styling), Development Guidelines and Playground
