@@ -140,7 +140,8 @@ export class Atomic {
           case FileType.ScriptJS:
           case FileType.ScriptTS:
           case FileType.ScriptJSX:
-          case FileType.ScriptTSX: {
+          case FileType.ScriptTSX: 
+          case FileType.ScriptMJS: {
             const { outJS } = await this.bundleScript(input, fileDescription.fullModuleName)
             appendFileSync(this.config.outScriptFilePath, outJS)
             break

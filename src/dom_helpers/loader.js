@@ -63,7 +63,7 @@ defCtxVal("getValueOfPath", function getValueOfPath(context, splitedPaths) {
 })
 
 defCtxVal("normalizeModuleName", function (moduleName) {
-    return moduleName.replaceAll("../", "").replaceAll("./", "").replaceAll(".tsx", "").replaceAll(".jsx", "").replaceAll(".ts", "").replaceAll(".js", "")
+    return moduleName.replaceAll("../", "").replaceAll("./", "").replaceAll(".tsx", "").replaceAll(".jsx", "").replaceAll(".ts", "").replaceAll(".js", "").replaceAll(".mjs", "")
 })
 
 defCtxVal("isLocalModule", function (moduleName) {

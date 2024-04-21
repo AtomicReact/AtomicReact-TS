@@ -13,7 +13,8 @@ import { parse } from "path"
 import { normalizeModuleName, sumPath } from "./tools/path.js"
 
 export const getFullModuleName = (packageName: string, moduleName: string) => {
-    return `${packageName}/${moduleName}`
+    if (moduleName.endsWith("/")) moduleName = moduleName.slice(0, -1)
+    return `${packageName}${(moduleName !== "") ? `/${moduleName}` : ``}`
 }
 
 export const transpileAtom = (fullModuleName: string, input: string) => {
@@ -62,7 +63,8 @@ export const FileExtensionsPattern = [
     /* 2 */ /\.js$/,
     /* 3 */ /.*(?<!(\.(d)))(\.ts)$/,
     /* 4 */ /\.jsx$/,
-    /* 5 */ /\.tsx$/
+    /* 5 */ /\.tsx$/,
+    /* 6 */ /\.mjs$/,
 ]
 export enum FileType {
     StyleModule,
@@ -71,6 +73,7 @@ export enum FileType {
     ScriptTS,
     ScriptJSX,
     ScriptTSX,
+    ScriptMJS,
     AnyOther,
 }
 
@@ -121,7 +124,7 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
     const { type: fileType, filePathAsTS } = normalizeFilePath(filePath)
 
 
-    if (recursive && [FileType.ScriptJS, FileType.ScriptJSX, FileType.ScriptTS, FileType.ScriptTSX].includes(fileType)) {
+    if (recursive && [FileType.ScriptJS, FileType.ScriptJSX, FileType.ScriptTS, FileType.ScriptTSX, FileType.ScriptMJS].includes(fileType)) {
         const sourceFile = createSourceFile(filePathAsTS, readFileSync(filePathAsTS, { encoding: "utf-8" }), ScriptTarget.ESNext)
 
         function delintNode(node: TS.Node) {
@@ -138,7 +141,7 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
                 let _moduleName = sumPath(parse(moduleName).dir, specifier)
                 if (!specifier.startsWith(".")) { /* May be node module package OR it's using baseURL */
 
-                    if(baseURL) {
+                    if (baseURL) {
                         _path = normalizeFilePath(resolvePath(process.cwd(), baseURL, specifier)).filePathAsTS
                         _moduleName = normalizeModuleName(specifier)
                     }

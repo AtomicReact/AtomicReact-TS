@@ -1,6 +1,6 @@
 
 export function normalizeModuleName(moduleName: string) {
-    return moduleName.replaceAll("\\", "/").replaceAll("../", "").replaceAll("./", "").replaceAll(".tsx", "").replaceAll(".jsx", "").replaceAll(".ts", "").replaceAll(".js", "")
+    return moduleName.replaceAll("\\", "/").replaceAll("../", "").replaceAll("./", "").replaceAll(".tsx", "").replaceAll(".jsx", "").replaceAll(".ts", "").replaceAll(".js", "").replaceAll(".mjs", "")
 }
 
 export const sumPath = (absolutePath: string, relativePath: string) => {
