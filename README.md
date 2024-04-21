@@ -35,5 +35,6 @@ AtomicReact-TS is a framework to build Web Apps with atomicity concept using Typ
 - [X] Import and export AtomicReact libraries 
 - [X] Support to Relative Paths (`./some/path/import/file.tsx`)
 - [X] Support to Absolute Paths (`some/path/import/file.tsx`) - Support working with `baseUrl` of `tsconfig.json > compilerOptions`
+- [X] Support to external libs (ES6+) and `.mjs` scripts
 - [ ] [CLI] --init command: build and web_server scripts
 - [ ] Documentation: Get Started, Basis of AtomicReact (Atom, Styling), Development Guidelines and Playground
