@@ -284,7 +284,7 @@ export const JSX = {
                     if (key === AtomicReact.AtomicVariables.Nucleus) return `${AtomicReact.ClientVariables.Nucleus}="${JSX["jsx-runtime"].atom.atom.id}"`
                     const value = props[key]
                     if (key === AtomicReact.AtomicVariables.Sub) return `${AtomicReact.ClientVariables.SubOf}="${JSX["jsx-runtime"].atom.atom.id}" ${AtomicReact.ClientVariables.Sub}="${value}"`
-                    return (atom) ? null : `${key}="${(Array.isArray(value)) ? value.join(" ") : value}"`
+                    return (atom || value === undefined) ? null : `${key}="${(Array.isArray(value)) ? value.join(" ") : value}"`
                 })
                 .filter(i => i != null)
 
