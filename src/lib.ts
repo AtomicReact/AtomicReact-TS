@@ -259,7 +259,7 @@ export const JSX = {
 
                 if (Object.getPrototypeOf(source)["name"] && Object.getPrototypeOf(source)["name"] === Atom.name) {
                     let instance = new (source as typeof Atom)(Object.assign({}, props))
-                    JSX["jsx-runtime"].queue.push({
+                    JSX["jsx-runtime"].queue.unshift({
                         atom: instance
                     })
                     atom.atom = instance
