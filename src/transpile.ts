@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import TS, { ImportDeclaration, TranspileOptions } from "typescript"
+import TS, { ExportDeclaration, ImportDeclaration, TranspileOptions } from "typescript"
 import { ATOMICREACT_GLOBAL, LoaderMethods } from "./constants.js"
 const { ModuleKind, JsxEmit, ScriptTarget, ModuleResolutionKind, transpileModule: transpileModuleTS, createSourceFile, createSourceMapSource, SyntaxKind } = TS
 // import { parseFromString, resolve } from '@import-maps/resolve'
@@ -129,7 +129,8 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
 
         function delintNode(node: TS.Node) {
 
-            if (node.kind === SyntaxKind.ImportDeclaration) {
+            if ([SyntaxKind.ImportDeclaration, SyntaxKind.ExportDeclaration].includes(node.kind)) {
+                if (!(node as ImportDeclaration).moduleSpecifier || !(node as ImportDeclaration).moduleSpecifier["text"]) return
                 const specifier = (node as ImportDeclaration).moduleSpecifier["text"] as string
 
                 if (specifier === "atomicreact-ts") return
