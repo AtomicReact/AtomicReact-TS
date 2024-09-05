@@ -51,7 +51,7 @@ export class Client {
     static client: WebSocket
 
     static connect(host: string = __config.host, port: number = __config.port) {
-        const wsServerURL = `ws://${host}:${port}`
+        const wsServerURL = `${(location.protocol === "https:") ? "wss" : "ws"}://${host}:${port}`
         if (!this.client || this.client.readyState !== WebSocket.OPEN) {
             this.client = new WebSocket(wsServerURL)
         } else if (this.client.url.indexOf(wsServerURL) === -1) {
