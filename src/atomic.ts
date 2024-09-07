@@ -32,9 +32,11 @@ export interface IAtomicConfig {
     css: boolean
   },
   includeCore?: boolean /* Include core in output */
+
+  env?: Record<string, string | number | boolean>
 }
 
-
+export const ENVIROMENT_VARIABLE_PREFIX = "ATOMIC_REACT_APP_"
 
 type BeforeBundleCallback = () => Promise<void>
 
@@ -99,7 +101,7 @@ export class Atomic {
     writeFileSync(this.config.outStyleFilePath, "")
 
     const tsConfig = getTSConfig(process.cwd())
-    const baseURL = (tsConfig && tsConfig.compilerOptions && tsConfig.compilerOptions.baseUrl) ? tsConfig.compilerOptions.baseUrl : null 
+    const baseURL = (tsConfig && tsConfig.compilerOptions && tsConfig.compilerOptions.baseUrl) ? tsConfig.compilerOptions.baseUrl : null
     const filesDescription = listImportTree(this.config.indexScriptFilePath, this.config.packageName, this.getModuleName(this.config.indexScriptFilePath), true, baseURL)
 
     await this.doBeforeBundle()
@@ -108,8 +110,8 @@ export class Atomic {
 
     log(`─── Bundling package [${this.config.packageName}]`)
 
-     /* Pre Bundle */
-     appendFileSync(this.config.outScriptFilePath, `${ATOMICREACT_GLOBAL}.${LoaderMethods.BASE_ATOMS}="${this.config.packageName}";`)
+    /* Pre Bundle */
+    appendFileSync(this.config.outScriptFilePath, `${ATOMICREACT_GLOBAL}.${LoaderMethods.BASE_ATOMS}="${this.config.packageName}";`)
 
     let version: Hash | string = createHash("md5")
 
@@ -140,7 +142,7 @@ export class Atomic {
           case FileType.ScriptJS:
           case FileType.ScriptTS:
           case FileType.ScriptJSX:
-          case FileType.ScriptTSX: 
+          case FileType.ScriptTSX:
           case FileType.ScriptMJS: {
             const { outJS } = await this.bundleScript(input, fileDescription.fullModuleName)
             appendFileSync(this.config.outScriptFilePath, outJS)
@@ -156,8 +158,9 @@ export class Atomic {
     }
 
     /* Pos Bundle */
+    this.appendLoadScript(this.config.outScriptFilePath)
+    this.appendEnviromentVariables(this.config.outScriptFilePath, this.config.env)
 
-    appendFileSync(this.config.outScriptFilePath, `${ATOMICREACT_GLOBAL}.load();`)
 
     version = version.digest("hex").slice(0, 7)
     success(`${tab}└── Bundled ${filesDescription.length} files. Version: #${version}`)
@@ -276,6 +279,29 @@ export class Atomic {
     for (let f of this.todoBeforeBundle) {
       await f()
     }
+  }
+
+  appendLoadScript(outScriptFilePath: string) {
+    appendFileSync(outScriptFilePath, `${ATOMICREACT_GLOBAL}.load();`)
+  }
+
+  appendEnviromentVariables(outScriptFilePath: string, env?: IAtomicConfig["env"]) {
+    if (!env) env = {}
+
+    let envToAppend: IAtomicConfig["env"] = {}
+
+    for (const enviroment of [{ needPrefix: true, env: process.env }, { needPrefix: false, env }]) {
+
+      for (const key of Object.keys(enviroment.env)) {
+
+        if ((enviroment.needPrefix && key.indexOf(ENVIROMENT_VARIABLE_PREFIX) !== 0)) continue
+        
+        envToAppend[key] = enviroment.env[key]
+      }
+
+    }
+
+    appendFileSync(outScriptFilePath, `${ATOMICREACT_GLOBAL}.lib.AtomicReact.setEnv(\`${JSON.stringify(envToAppend)}\`);`)
   }
 
 }

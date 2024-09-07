@@ -58,6 +58,12 @@ export class AtomicReact {
     }
 
     static global: object /* @TODO: to type global atomicreact: {atoms, modules, ...}  */
+    
+    static env: Record<string, string | object> = {}
+    static setEnv(_env: string | Record<string, string | object>) {
+        if (typeof _env === "string") this.env = JSON.parse(_env)
+        else this.env = _env
+    }
 
     static makeID(length = 6) {
         let id = ''
