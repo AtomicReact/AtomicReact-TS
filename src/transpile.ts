@@ -159,7 +159,7 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
                             } else {
                                 const pkg = JSON.parse(readFileSync(pkgJsonPath, { encoding: "utf-8" }))
                                 _packageName = pkg.name
-                                _path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, specifier)[0]) : resolvePath(nodeModuleDirPath, specifier)
+                                _path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, specifier)[0]) : resolvePath(nodeModuleDirPath, specifier, pkg.module)
                                 _moduleName = normalizeModuleName(specifierPaths.slice(i + 1).join("/"))
                                 break
                             }
