@@ -10,7 +10,7 @@ import { minify } from "terser"
 import { error, log, success, tab, warn } from "./tools/console_io.js"
 import { createDirIfNotExist } from "./tools/file.js"
 import { normalizeModuleName } from "./tools/path.js"
-import { transpileAtom, transpileStyle, transpileModule, FileType, getFullModuleName, listImportTree, getTSConfig } from "./transpile.js"
+import { transpileAtom, transpileStyle, transpileModule, FileType, listImportTree, getTSConfig, resolveLibrary } from "./transpile.js"
 import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL, LoaderMethods } from "./constants.js"
 
 export * from "./lib.js"
@@ -86,6 +86,20 @@ export class Atomic {
 
   getModuleName(filePath: string) {
     return normalizeModuleName(relative(this.indexScriptDirPath, filePath))
+  }
+
+  resolve(filePath: string) : {packageName: string,moduleName: string } {
+    let packageName = this.config.packageName
+    let moduleName = this.getModuleName(filePath)
+    if (moduleName.indexOf("node_modules") === 0) {
+      const library = resolveLibrary(filePath, false)
+      packageName = library.packageName
+      moduleName = library.moduleName
+    }
+    return {
+      packageName,
+      moduleName
+    }
   }
 
   async bundle(): Promise<{ version: string }> {

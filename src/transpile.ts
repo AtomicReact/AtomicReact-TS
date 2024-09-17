@@ -8,7 +8,7 @@ const { ModuleKind, JsxEmit, ScriptTarget, ModuleResolutionKind, transpileModule
 // import * as PackageResolver from "package-exports-resolver-kernel"
 import { resolve } from "resolve.exports"
 import { existsSync, readFileSync } from "fs"
-import { resolve as resolvePath } from "node:path"
+import { relative, resolve as resolvePath } from "node:path"
 import { parse } from "path"
 import { normalizeModuleName, sumPath } from "./tools/path.js"
 
@@ -148,22 +148,10 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
                     }
 
                     if (!baseURL || (baseURL && !existsSync(_path))) { /* It's is a node module package */
-                        const specifierPaths = specifier.split("/")
-                        const nodeModuleDirPath = resolvePath(process.cwd(), "node_modules")
-                        let moduleDirPath = nodeModuleDirPath
-                        for (let i = 0; i < specifierPaths.length; i++) {
-                            moduleDirPath = resolvePath(moduleDirPath, specifierPaths[i])
-                            const pkgJsonPath = resolvePath(moduleDirPath, "package.json")
-                            if (!existsSync(pkgJsonPath)) {
-                                continue
-                            } else {
-                                const pkg = JSON.parse(readFileSync(pkgJsonPath, { encoding: "utf-8" }))
-                                _packageName = pkg.name
-                                _path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, specifier)[0]) : resolvePath(nodeModuleDirPath, specifier, pkg.module)
-                                _moduleName = normalizeModuleName(specifierPaths.slice(i + 1).join("/"))
-                                break
-                            }
-                        }
+                        const library = resolveLibrary(specifier)
+                        _packageName = library.packageName,
+                        _path = library.path,
+                        _moduleName = library.moduleName
                     }
 
 
@@ -196,6 +184,36 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
 
 export const listImportTree = (filePath: string, packageName: string, moduleName: string, recursive = true, baseURL?: TSConfig["compilerOptions"]["baseUrl"]): Array<IFileDescription> => {
     return Object.values(mapImportTree(filePath, packageName, moduleName, recursive, {}, baseURL))
+}
+
+export const resolveLibrary = (importPath: string, isPathSpecifier = true): { packageName: string, path: string, moduleName: string, package: any } => {
+    const nodeModuleDirPath = resolvePath(process.cwd(), "node_modules")
+    if(!isPathSpecifier) importPath = relative(nodeModuleDirPath, importPath) 
+    const importPathParts = importPath.replaceAll("\\", "/").split("/")
+    let moduleDirPath = nodeModuleDirPath
+    for (let i = 0; i < importPathParts.length; i++) {
+        moduleDirPath = resolvePath(moduleDirPath, importPathParts[i])
+        const pkgJsonPath = resolvePath(moduleDirPath, "package.json")
+        if (!existsSync(pkgJsonPath)) {
+            continue
+        } else {
+            const pkg = JSON.parse(readFileSync(pkgJsonPath, { encoding: "utf-8" }))
+            const packageName = pkg.name
+            let path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, importPath)[0]) : resolvePath(nodeModuleDirPath, importPath, pkg.module)
+            let moduleName = normalizeModuleName(importPathParts.slice(i + 1).join("/"))
+            if(!isPathSpecifier) {
+                path = resolvePath(nodeModuleDirPath, importPath) //c:/guihgo/node_modules/@pack/packn/src/inputs.tsx
+                moduleName = normalizeModuleName(relative(`${packageName}/${resolve(pkg, "/")[0]}`, importPath))
+            }
+            
+            return {
+                package: pkg,
+                packageName: packageName,
+                path,
+                moduleName
+            }
+        }
+    }
 }
 
 type CompilerOptions = typeof TS.parseCommandLine extends (...args: any[]) => infer TResult ?
