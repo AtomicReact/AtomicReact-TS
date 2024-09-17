@@ -60,8 +60,8 @@ export class HotReload {
     this.watcher = chokidar.watch(this.watchingPaths)
 
     this.watcher.on('change', (async (filePath, stats) => {
-
-      const fileDescription = listImportTree(filePath, this.config.atomic.config.packageName, this.config.atomic.getModuleName(filePath), false)[0]
+      const { packageName, moduleName} = this.config.atomic.resolve(filePath)
+      const fileDescription = listImportTree(filePath, packageName, moduleName, false)[0]
 
       try {
         let type: CommandType = null
