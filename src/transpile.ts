@@ -123,6 +123,20 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
 
     const { type: fileType, filePathAsTS } = normalizeFilePath(filePath)
 
+    const filePathHash = createHash("md5").update(filePathAsTS).digest("hex")
+    if (mapAccumulator[filePathHash]) {
+        mapAccumulator[filePathHash].usesCount++
+        return mapAccumulator
+    }
+
+    mapAccumulator[filePathHash] = {
+        path: filePathAsTS,
+        type: fileType,
+        packageName,
+        moduleName,
+        fullModuleName: getFullModuleName(packageName, moduleName),
+        usesCount: 1
+    }
 
     if (recursive && [FileType.ScriptJS, FileType.ScriptJSX, FileType.ScriptTS, FileType.ScriptTSX, FileType.ScriptMJS].includes(fileType)) {
         const sourceFile = createSourceFile(filePathAsTS, readFileSync(filePathAsTS, { encoding: "utf-8" }), ScriptTarget.ESNext)
@@ -163,32 +177,21 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
         TS.forEachChild(sourceFile, delintNode)
     }
 
-    const filePathHash = createHash("md5").update(filePathAsTS).digest("hex")
-    if (mapAccumulator[filePathHash]) {
-        mapAccumulator[filePathHash].usesCount++
-    }
-    else {
-        mapAccumulator[filePathHash] = {
-            path: filePathAsTS,
-            type: fileType,
-            packageName,
-            moduleName,
-            fullModuleName: getFullModuleName(packageName, moduleName),
-            usesCount: 1
-        }
-    }
+    mapAccumulator[filePathHash].packageName = packageName
+    mapAccumulator[filePathHash].moduleName = moduleName
+    mapAccumulator[filePathHash].fullModuleName = getFullModuleName(packageName, moduleName)
 
     return mapAccumulator
 }
 
 
 export const listImportTree = (filePath: string, packageName: string, moduleName: string, recursive = true, baseURL?: TSConfig["compilerOptions"]["baseUrl"]): Array<IFileDescription> => {
-    return Object.values(mapImportTree(filePath, packageName, moduleName, recursive, {}, baseURL))
+    return Object.values(mapImportTree(filePath, packageName, moduleName, recursive, {}, baseURL)).reverse()
 }
 
 export const resolveLibrary = (importPath: string, isPathSpecifier = true): { packageName: string, path: string, moduleName: string, package: any } => {
     const nodeModuleDirPath = resolvePath(process.cwd(), "node_modules")
-    if(!isPathSpecifier) importPath = relative(nodeModuleDirPath, importPath) 
+    if (!isPathSpecifier) importPath = relative(nodeModuleDirPath, importPath)
     const importPathParts = importPath.replaceAll("\\", "/").split("/")
     let moduleDirPath = nodeModuleDirPath
     for (let i = 0; i < importPathParts.length; i++) {
@@ -201,11 +204,11 @@ export const resolveLibrary = (importPath: string, isPathSpecifier = true): { pa
             const packageName = pkg.name
             let path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, importPath)[0]) : resolvePath(nodeModuleDirPath, importPath, pkg.module)
             let moduleName = normalizeModuleName(importPathParts.slice(i + 1).join("/"))
-            if(!isPathSpecifier) {
+            if (!isPathSpecifier) {
                 path = resolvePath(nodeModuleDirPath, importPath) //c:/guihgo/node_modules/@pack/packn/src/inputs.tsx
                 moduleName = normalizeModuleName(relative(`${packageName}/${resolve(pkg, "/")[0]}`, importPath))
             }
-            
+
             return {
                 package: pkg,
                 packageName: packageName,
