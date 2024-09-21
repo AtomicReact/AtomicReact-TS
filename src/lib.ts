@@ -130,17 +130,17 @@ export class AtomicReact {
         function processQueue() {
             if (JSX["jsx-runtime"].queue.length === 0) return
 
-            const lastAtom = JSX["jsx-runtime"].queue[JSX["jsx-runtime"].queue.length - 1]
+            const firstAtom = JSX["jsx-runtime"].queue[0]
 
-            let atom = document.querySelector(`[${AtomicReact.ClientVariables.Id}="${lastAtom.atom.id}"]`) as IAtomicElement
+            let atom = document.querySelector(`[${AtomicReact.ClientVariables.Id}="${firstAtom.atom.id}"]`) as IAtomicElement
             if (!atom) return
 
             /* Define Atomic on rendered atoms */
             atom.Atomic = {
-                atom: lastAtom.atom
+                atom: firstAtom.atom
             }
 
-            JSX["jsx-runtime"].queue.pop()
+            JSX["jsx-runtime"].queue.shift()
 
             /* Fire onRender event on rendered atoms */
             if (atom.Atomic.atom.onRender) {
@@ -265,9 +265,7 @@ export const JSX = {
 
                 if (Object.getPrototypeOf(source)["name"] && Object.getPrototypeOf(source)["name"] === Atom.name) {
                     let instance = new (source as typeof Atom)(Object.assign({}, props))
-                    JSX["jsx-runtime"].queue.unshift({
-                        atom: instance
-                    })
+
                     atom.atom = instance
                     if (instance.preRender) {
                         try { instance.preRender() } catch (e) { console.error(e) }
@@ -279,6 +277,10 @@ export const JSX = {
                 JSX["jsx-runtime"].atom = Object.assign({}, atom)
                 source = (source as Function).call(this) as string
                 JSX["jsx-runtime"].atom = Object.assign({}, beforeAtom)
+
+                JSX["jsx-runtime"].queue.push({
+                    atom: atom.atom
+                })
             }
 
             if (props["children"] === undefined) props["children"] = []
