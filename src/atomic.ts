@@ -19,6 +19,7 @@ export * from "./modules/index.js"
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const __filename = fileURLToPath(import.meta.url)
 
+export type IAtomicEnv = Record<string, string | number | boolean>
 export interface IAtomicConfig {
   indexScriptFilePath: string,
 
@@ -33,7 +34,7 @@ export interface IAtomicConfig {
   },
   includeCore?: boolean /* Include core in output */
 
-  env?: Record<string, string | number | boolean>
+  env?: IAtomicEnv
 }
 
 export const ENVIROMENT_VARIABLE_PREFIX = "ATOMIC_REACT_APP_"
