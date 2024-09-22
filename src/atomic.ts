@@ -15,6 +15,7 @@ import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL, LoaderMethods } f
 
 export * from "./lib.js"
 export * from "./modules/index.js"
+export * from "./transpile.js"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const __filename = fileURLToPath(import.meta.url)
