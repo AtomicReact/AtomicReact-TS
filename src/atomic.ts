@@ -37,7 +37,7 @@ export interface IAtomicConfig {
     css: boolean
   },
   includeCore?: boolean /* Include core in output */
-
+  autoLoad?: boolean,
   env?: IAtomicEnv
 }
 
@@ -87,13 +87,14 @@ export class Atomic {
     if (this.config.verbose === undefined) this.config.verbose = true
     if (this.config.minify === undefined) this.config.minify = { js: true, css: true }
     if (this.config.includeCore === undefined) this.config.includeCore = true
+    if (this.config.autoLoad === undefined) this.config.autoLoad = true
   }
 
   getModuleName(filePath: string) {
     return normalizeModuleName(relative(this.indexScriptDirPath, filePath))
   }
 
-  resolve(filePath: string) : {packageName: string,moduleName: string } {
+  resolve(filePath: string): { packageName: string, moduleName: string } {
     let packageName = this.config.packageName
     let moduleName = this.getModuleName(filePath)
     if (moduleName.indexOf("node_modules") === 0) {
@@ -177,7 +178,7 @@ export class Atomic {
     }
 
     /* Pos Bundle */
-    this.appendLoadScript(this.config.outScriptFilePath)
+    if(this.config.autoLoad) this.appendLoadScript(this.config.outScriptFilePath)
     this.appendEnviromentVariables(this.config.outScriptFilePath, this.config.env)
 
 
@@ -305,7 +306,7 @@ export class Atomic {
   }
 
   appendEnviromentVariables(outScriptFilePath: string, env?: IAtomicConfig["env"]) {
-    if (!env) env = {}
+    if (!env) return
 
     let envToAppend: IAtomicConfig["env"] = {}
 
@@ -314,7 +315,7 @@ export class Atomic {
       for (const key of Object.keys(enviroment.env)) {
 
         if ((enviroment.needPrefix && key.indexOf(ENVIROMENT_VARIABLE_PREFIX) !== 0)) continue
-        
+
         envToAppend[key] = enviroment.env[key]
       }
 
