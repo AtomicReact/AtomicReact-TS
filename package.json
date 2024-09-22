@@ -1,6 +1,6 @@
 {
    "name": "atomicreact-ts",
-   "version": "0.2.3",
+   "version": "0.2.4",
    "description": "AtomicReact is a framework to build web apps with atomicity concept",
    "main": "dist/atomic.js",
    "type": "module",
