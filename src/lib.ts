@@ -58,7 +58,7 @@ export class AtomicReact {
     }
 
     static global: object /* @TODO: to type global atomicreact: {atoms, modules, ...}  */
-    
+
     static env: Record<string, string | object> = {}
     static setEnv(_env: string | Record<string, string | object>) {
         if (typeof _env === "string") this.env = JSON.parse(_env)
@@ -275,12 +275,20 @@ export const JSX = {
 
                 let beforeAtom = Object.assign({}, JSX["jsx-runtime"].atom)
                 JSX["jsx-runtime"].atom = Object.assign({}, atom)
-                source = (source as Function).call(this) as string
+                try {
+                    source = (source as Function).call(this) as string
+                } catch (e) {
+                    console.error(`[AtomicReact] Error rendering`, { cause: e })
+                    return
+                }
                 JSX["jsx-runtime"].atom = Object.assign({}, beforeAtom)
 
-                JSX["jsx-runtime"].queue.push({
-                    atom: atom.atom
-                })
+                if (atom.atom) {
+                    JSX["jsx-runtime"].queue.push({
+                        atom: atom.atom
+                    })
+                }
+
             }
 
             if (props["children"] === undefined) props["children"] = []
