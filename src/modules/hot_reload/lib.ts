@@ -32,7 +32,8 @@ export interface EvalContent {
     js: string
 }
 export interface RefreshContent {
-    version: string
+    version: string,
+    filenames: Array<string>
 }
 
 export type CommandContent = ScriptContent | StyleContent | EvalContent | RefreshContent
@@ -141,10 +142,10 @@ export class Client {
         }
     }
 
-    static refreshBundle({ version }: RefreshContent) {
+    static refreshBundle({ version, filenames }: RefreshContent) {
         function addRandomParam(url: string) {
             const _url = (new URL(url))
-            _url.searchParams.append("atomic_react", version)
+            if(filenames.find(fn => url.indexOf(fn) != -1))_url.searchParams.append("atomic_react", version)
             return _url.toString()
         }
         /* Reload Links */

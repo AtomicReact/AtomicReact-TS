@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import EventEmitter from "node:events"
 import { IncomingMessage } from "node:http"
-import { dirname } from "node:path"
+import { dirname, parse } from "node:path"
 import { fileURLToPath } from "node:url"
 
 import { WebSocketServer, WebSocket } from "ws"
@@ -150,7 +150,7 @@ export class HotReload {
       this.sendMessage(client, {
         command: {
           type: CommandType.REFRESH_BUNDLE,
-          content: { version: version } as RefreshContent
+          content: { version, filenames:[this.config.atomic.config.outScriptFilePath, this.config.atomic.config.outStyleFilePath].map(f=>(parse(f).base)) } as RefreshContent
         }
       })
     })
