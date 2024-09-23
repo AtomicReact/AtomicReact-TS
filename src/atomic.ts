@@ -178,8 +178,8 @@ export class Atomic {
     }
 
     /* Pos Bundle */
-    if(this.config.autoLoad) this.appendLoadScript(this.config.outScriptFilePath)
     this.appendEnviromentVariables(this.config.outScriptFilePath, this.config.env)
+    if(this.config.autoLoad) this.appendLoadScript(this.config.outScriptFilePath)
 
 
     version = version.digest("hex").slice(0, 7)
@@ -302,7 +302,7 @@ export class Atomic {
   }
 
   appendLoadScript(outScriptFilePath: string) {
-    appendFileSync(outScriptFilePath, `${ATOMICREACT_GLOBAL}.load();`)
+    appendFileSync(outScriptFilePath, `${ATOMICREACT_GLOBAL}.load('${this.config.packageName}');`)
   }
 
   appendEnviromentVariables(outScriptFilePath: string, env?: IAtomicConfig["env"]) {

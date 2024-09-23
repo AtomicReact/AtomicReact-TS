@@ -23,10 +23,10 @@ defCtxVal(ATOMIC_REACT, {})
 defCtxVal(DEFINES, {}, this[ATOMIC_REACT])
 defCtxVal(BASE_ATOMS, "the_pkg_here", this[ATOMIC_REACT], null, {writable: true})
 defCtxVal(ATOMS, {}, this[ATOMIC_REACT])
-defCtxVal(LOAD, () => {
+defCtxVal(LOAD, (pN) => {
     window.addEventListener(this[ATOMIC_REACT][LIB].AtomicReact.AtomicEvents.LOADED, function (e) {
         window.addEventListener("load", function (e) {
-            this[ATOMIC_REACT][LIB].AtomicReact.load()
+            this[ATOMIC_REACT][LIB].AtomicReact.load(pN)
         })
     })
     if (Object.keys(this[ATOMIC_REACT][DEFINES]).length == 0) {
@@ -160,6 +160,7 @@ defCtxVal("define", function (moduleName, inputs, func) {
 
     /* Save factory path */
     Object.getOwnPropertyNames(_exports).forEach(key => {
+        if(!_exports[key]) return
         if ([this[ATOMIC_REACT][LIB].Atom.name].includes(Object.getPrototypeOf(_exports[key])["name"])) {
             Object.defineProperty(_exports[key].prototype, "__factory", { value: `${moduleName}`, configurable: true })
         }

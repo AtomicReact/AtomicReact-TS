@@ -28,17 +28,17 @@ interface IHotReload {
     addrs: string,
     port: number
 }
-
+export type IAtomicOnLoad = (packageName: string) => void
 export class AtomicReact {
     static hotReload: IHotReload
 
-    static onLoads: Array<() => void> = []
+    static onLoads: Array<IAtomicOnLoad> = []
 
-    static set onLoad(callback: () => void) {
+    static set onLoad(callback: IAtomicOnLoad) {
         AtomicReact.onLoads.push(callback)
     }
-    static load() {
-        for (let i = 0; i < AtomicReact.onLoads.length; i++) { try { AtomicReact.onLoads[i]() } catch (e) { } }
+    static load(packageName: string) {
+        for (let i = 0; i < AtomicReact.onLoads.length; i++) { try { AtomicReact.onLoads[i](packageName) } catch (e) { } }
     }
 
     static ClientVariables: IClientVariables = {
