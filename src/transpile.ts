@@ -107,35 +107,57 @@ export const normalizeFilePath = (filePath: string): { type: FileType, filePathA
 }
 
 interface IFileDescription {
+    hashFilePath: string
     path: string,
     type: FileType,
     packageName: string,
     moduleName: string,
     fullModuleName: string,
-    usesCount: number
+    usesCount: number,
+    imports: Array<string> /* array of filePathHash */
 }
 
 interface IMapImportTree {
     [filePathHash: string]: IFileDescription
 }
 
-export const mapImportTree = (filePath: string, packageName: string, moduleName: string, recursive = true, mapAccumulator: IMapImportTree = {}, baseURL?: TSConfig["compilerOptions"]["baseUrl"]): IMapImportTree => {
+export const mapImportTree = (filePath: string, packageName: string, moduleName: string, recursive = true, mapAccumulator: IMapImportTree = {}, baseURL?: TSConfig["compilerOptions"]["baseUrl"], parentFilePathHash?: string): IMapImportTree => {
 
     const { type: fileType, filePathAsTS } = normalizeFilePath(filePath)
 
     const filePathHash = createHash("md5").update(filePathAsTS).digest("hex")
     if (mapAccumulator[filePathHash]) {
+        /* Redefine File Description to put it on last in map */
+        function redefineHashPath(hashToRedefine: string) {
+            const _mapAccumulator = {...mapAccumulator[hashToRedefine]}
+            delete mapAccumulator[hashToRedefine]
+            mapAccumulator[hashToRedefine] = {..._mapAccumulator}
+
+            for(const importFilePathHash of mapAccumulator[hashToRedefine].imports) {
+                redefineHashPath(importFilePathHash)
+            }
+        }
+        redefineHashPath(filePathHash)
+        
         mapAccumulator[filePathHash].usesCount++
         return mapAccumulator
     }
 
     mapAccumulator[filePathHash] = {
+        hashFilePath: filePathHash,
         path: filePathAsTS,
         type: fileType,
         packageName,
         moduleName,
         fullModuleName: getFullModuleName(packageName, moduleName),
-        usesCount: 1
+        usesCount: 1,
+        imports: []
+    }
+
+    if(parentFilePathHash) {
+        mapAccumulator[parentFilePathHash].imports.push(filePathHash)
+    } else {
+        parentFilePathHash = filePathHash
     }
 
     if (recursive && [FileType.ScriptJS, FileType.ScriptJSX, FileType.ScriptTS, FileType.ScriptTSX, FileType.ScriptMJS].includes(fileType)) {
@@ -170,7 +192,7 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
 
 
                 }
-                mapAccumulator = mapImportTree(_path, _packageName, _moduleName, recursive, mapAccumulator, baseURL)
+                mapAccumulator = mapImportTree(_path, _packageName, _moduleName, recursive, mapAccumulator, baseURL, filePathHash)
             }
         }
 
