@@ -292,7 +292,7 @@ export const JSX = {
             }
 
             if (props["children"] === undefined) props["children"] = []
-            if (typeof props["children"] == "string") props["children"] = [props["children"]]
+            if(!Array.isArray(props["children"])) props["children"] = [props["children"]]
 
             let attributes = Object.keys(props)
                 .map(key => {
