@@ -121,7 +121,7 @@ interface IMapImportTree {
     [filePathHash: string]: IFileDescription
 }
 
-export const mapImportTree = (filePath: string, packageName: string, moduleName: string, recursive = true, mapAccumulator: IMapImportTree = {}, baseURL?: TSConfig["compilerOptions"]["baseUrl"], parentFilePathHash?: string): IMapImportTree => {
+export const mapImportTree = (filePath: string, packageName: string, moduleName: string, recursive = true, mapAccumulator: IMapImportTree = {}, baseURL?: TSConfig["compilerOptions"]["baseUrl"], parentFilePathHash?: string, packageDirPath: string = process.cwd()): IMapImportTree => {
 
     const { type: fileType, filePathAsTS } = normalizeFilePath(filePath)
 
@@ -129,16 +129,16 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
     if (mapAccumulator[filePathHash]) {
         /* Redefine File Description to put it on last in map */
         function redefineHashPath(hashToRedefine: string) {
-            const _mapAccumulator = {...mapAccumulator[hashToRedefine]}
+            const _mapAccumulator = { ...mapAccumulator[hashToRedefine] }
             delete mapAccumulator[hashToRedefine]
-            mapAccumulator[hashToRedefine] = {..._mapAccumulator}
+            mapAccumulator[hashToRedefine] = { ..._mapAccumulator }
 
-            for(const importFilePathHash of mapAccumulator[hashToRedefine].imports) {
+            for (const importFilePathHash of mapAccumulator[hashToRedefine].imports) {
                 redefineHashPath(importFilePathHash)
             }
         }
         redefineHashPath(filePathHash)
-        
+
         mapAccumulator[filePathHash].usesCount++
         return mapAccumulator
     }
@@ -154,7 +154,7 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
         imports: []
     }
 
-    if(parentFilePathHash) {
+    if (parentFilePathHash) {
         mapAccumulator[parentFilePathHash].imports.push(filePathHash)
     } else {
         parentFilePathHash = filePathHash
@@ -176,23 +176,27 @@ export const mapImportTree = (filePath: string, packageName: string, moduleName:
                 let _path = resolvePath(parsedFilePath.dir, specifier)
                 let _packageName = packageName
                 let _moduleName = sumPath(parse(moduleName).dir, specifier)
+                let _baseURL = baseURL
+                let _packageDirPath = packageDirPath
                 if (!specifier.startsWith(".")) { /* May be node module package OR it's using baseURL */
 
                     if (baseURL) {
-                        _path = normalizeFilePath(resolvePath(process.cwd(), baseURL, specifier)).filePathAsTS
+                        _path = normalizeFilePath(resolvePath(packageDirPath, baseURL, specifier)).filePathAsTS
                         _moduleName = normalizeModuleName(specifier)
                     }
 
                     if (!baseURL || (baseURL && !existsSync(_path))) { /* It's is a node module package */
                         const library = resolveLibrary(specifier)
-                        _packageName = library.packageName,
-                        _path = library.path,
+                        _packageName = library.packageName
+                        _path = library.path
                         _moduleName = library.moduleName
+                        _baseURL = library.baseURL
+                        _packageDirPath = library.dirPath
                     }
 
 
                 }
-                mapAccumulator = mapImportTree(_path, _packageName, _moduleName, recursive, mapAccumulator, baseURL, filePathHash)
+                mapAccumulator = mapImportTree(_path, _packageName, _moduleName, recursive, mapAccumulator, _baseURL, filePathHash, _packageDirPath)
             }
         }
 
@@ -211,7 +215,7 @@ export const listImportTree = (filePath: string, packageName: string, moduleName
     return Object.values(mapImportTree(filePath, packageName, moduleName, recursive, {}, baseURL)).reverse()
 }
 
-export const resolveLibrary = (importPath: string, isPathSpecifier = true): { packageName: string, path: string, moduleName: string, package: any } => {
+export const resolveLibrary = (importPath: string, isPathSpecifier = true): { packageName: string, path: string, moduleName: string, package: any, dirPath: string, baseURL: string } => {
     const nodeModuleDirPath = resolvePath(process.cwd(), "node_modules")
     if (!isPathSpecifier) importPath = relative(nodeModuleDirPath, importPath)
     const importPathParts = importPath.replaceAll("\\", "/").split("/")
@@ -235,10 +239,18 @@ export const resolveLibrary = (importPath: string, isPathSpecifier = true): { pa
                 package: pkg,
                 packageName: packageName,
                 path,
-                moduleName
+                moduleName,
+                dirPath: moduleDirPath,
+                baseURL: getBaseURL(moduleDirPath)
             }
         }
     }
+}
+
+export const getBaseURL = (packageDirPath = process.cwd()) => {
+    const tsConfig = getTSConfig(packageDirPath)
+    const baseURL = (tsConfig && tsConfig.compilerOptions && tsConfig.compilerOptions.baseUrl) ? tsConfig.compilerOptions.baseUrl : null
+    return baseURL
 }
 
 type CompilerOptions = typeof TS.parseCommandLine extends (...args: any[]) => infer TResult ?

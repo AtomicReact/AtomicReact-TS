@@ -10,7 +10,7 @@ import { minify } from "terser"
 import { error, log, success, tab, warn } from "./tools/console_io.js"
 import { createDirIfNotExist } from "./tools/file.js"
 import { normalizeModuleName } from "./tools/path.js"
-import { transpileAtom, transpileStyle, transpileModule, FileType, listImportTree, getTSConfig, resolveLibrary } from "./transpile.js"
+import { transpileAtom, transpileStyle, transpileModule, FileType, listImportTree, getTSConfig, resolveLibrary, getBaseURL } from "./transpile.js"
 import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL, LoaderMethods } from "./constants.js"
 
 export * from "./lib.js"
@@ -120,9 +120,7 @@ export class Atomic {
 
     writeFileSync(this.config.outStyleFilePath, "")
 
-    const tsConfig = getTSConfig(process.cwd())
-    const baseURL = (tsConfig && tsConfig.compilerOptions && tsConfig.compilerOptions.baseUrl) ? tsConfig.compilerOptions.baseUrl : null
-    const filesDescription = listImportTree(this.config.indexScriptFilePath, this.config.packageName, this.getModuleName(this.config.indexScriptFilePath), true, baseURL)
+    const filesDescription = listImportTree(this.config.indexScriptFilePath, this.config.packageName, this.getModuleName(this.config.indexScriptFilePath), true, getBaseURL(process.cwd()))
 
     await this.doBeforeBundle()
 
