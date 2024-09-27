@@ -143,7 +143,7 @@ export class Atomic {
       try {
         switch (fileDescription.type) {
           case FileType.StyleModule: {
-            const { outCSS, outJS, uniqueID } = await this.bundleModuleCSS(input, fileDescription.fullModuleName, fileDescription.path)
+            const { outCSS, outJS, uniqueID } = await this.bundleModuleCSS(fileDescription.packageName, fileDescription.moduleName, input, fileDescription.path)
 
             appendFileSync(this.config.outStyleFilePath, outCSS)
             appendFileSync(this.config.outScriptFilePath, outJS)
@@ -162,7 +162,7 @@ export class Atomic {
           case FileType.ScriptJSX:
           case FileType.ScriptTSX:
           case FileType.ScriptMJS: {
-            const { outJS } = await this.bundleScript(input, fileDescription.fullModuleName)
+            const { outJS } = await this.bundleScript(fileDescription.packageName, fileDescription.moduleName, input)
             appendFileSync(this.config.outScriptFilePath, outJS)
             break
           }
@@ -177,7 +177,7 @@ export class Atomic {
 
     /* Pos Bundle */
     this.appendEnviromentVariables(this.config.outScriptFilePath, this.config.env)
-    if(this.config.autoLoad) this.appendLoadScript(this.config.outScriptFilePath)
+    if (this.config.autoLoad) this.appendLoadScript(this.config.outScriptFilePath)
 
 
     version = version.digest("hex").slice(0, 7)
@@ -187,7 +187,7 @@ export class Atomic {
     return { version }
   }
 
-  async bundleModuleCSS(input: string, fullModuleName: string, filePath: string): Promise<{ outJS: string, outCSS: string, uniqueID: string }> {
+  async bundleModuleCSS(packageName: string, moduleName: string, input: string, filePath: string,): Promise<{ outJS: string, outCSS: string, uniqueID: string }> {
 
     const uniqueID = `a${createHash("md5")
       .update(filePath).digest("hex").slice(0, 7)}`
@@ -233,7 +233,7 @@ export class Atomic {
 
     return {
       outCSS: result.css,
-      outJS: transpileStyle(fullModuleName, uniqueID, tokens),
+      outJS: transpileStyle(packageName, moduleName, uniqueID, tokens),
       uniqueID
     }
   }
@@ -250,9 +250,9 @@ export class Atomic {
     }
   }
 
-  async bundleScript(input: string, fullModuleName: string): Promise<{ outJS: string }> {
+  async bundleScript(packageName: string, moduleName: string, input: string): Promise<{ outJS: string }> {
 
-    const transpiled = transpileAtom(fullModuleName, input)
+    const transpiled = transpileAtom(packageName, moduleName, input)
     const outJS = (this.config.minify.js) ? (await minify(transpiled, { toplevel: true, compress: true, keep_classnames: true, keep_fnames: false })).code : transpiled
 
     return {

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import TS, { ExportDeclaration, ImportDeclaration, TranspileOptions } from "typescript"
+import TS, { ExportDeclaration, ImportDeclaration, transpile, TranspileOptions } from "typescript"
 import { ATOMICREACT_GLOBAL, LoaderMethods } from "./constants.js"
 const { ModuleKind, JsxEmit, ScriptTarget, ModuleResolutionKind, transpileModule: transpileModuleTS, createSourceFile, createSourceMapSource, SyntaxKind } = TS
 // import { parseFromString, resolve } from '@import-maps/resolve'
@@ -17,14 +17,18 @@ export const getFullModuleName = (packageName: string, moduleName: string) => {
     return `${packageName}${(moduleName !== "") ? `/${moduleName}` : ``}`
 }
 
-export const transpileAtom = (fullModuleName: string, input: string) => {
-    return transpileModuleTS(input, getTranspileOptions(fullModuleName)).outputText.replace(LoaderMethods.DEFINE, LoaderMethods.DEFINE_ATOM)
+export const transpileAtom = (packageName: string, moduleName: string, input: string) => {
+    const TO_BE_REPLACED = "TO_BE_REPLACED"
+    const transpileOptions = getTranspileOptions(TO_BE_REPLACED)
+    let transpiled = transpileModuleTS(input, transpileOptions).outputText.replace(LoaderMethods.DEFINE, LoaderMethods.DEFINE_ATOM)
+    transpiled = transpiled.replace(TO_BE_REPLACED, `${packageName}","${moduleName}`)
+    return transpiled
 }
 export const transpileModule = (fullModuleName: string, input: string) => {
     return transpileModuleTS(input, getTranspileOptions(fullModuleName)).outputText.replace(LoaderMethods.DEFINE, LoaderMethods.DEFINE_MODULE)
 }
-export const transpileStyle = (fullModuleName: string, uniqueID: string, tokens: { [key: string]: string }) => {
-    return `${LoaderMethods.DEFINE_STYLE}("${fullModuleName}","${uniqueID}",${JSON.stringify(Object.getOwnPropertyNames(tokens))});`
+export const transpileStyle = (packageName: string, moduleName: string, uniqueID: string, tokens: { [key: string]: string }) => {
+    return `${LoaderMethods.DEFINE_STYLE}("${packageName}","${moduleName}","${uniqueID}",${JSON.stringify(Object.getOwnPropertyNames(tokens))});`
 }
 
 export const getTranspileOptions = (moduleName: string): TranspileOptions => {

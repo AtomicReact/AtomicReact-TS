@@ -60,7 +60,7 @@ export class HotReload {
     this.watcher = chokidar.watch(this.watchingPaths)
 
     this.watcher.on('change', (async (filePath, stats) => {
-      const { packageName, moduleName} = this.config.atomic.resolve(filePath)
+      const { packageName, moduleName } = this.config.atomic.resolve(filePath)
       const fileDescription = listImportTree(filePath, packageName, moduleName, false)[0]
 
       try {
@@ -72,7 +72,7 @@ export class HotReload {
         switch (fileDescription.type) {
           case FileType.StyleModule: {
             type = CommandType.STYLE
-            let { outCSS: css, outJS: js } = (await this.config.atomic.bundleModuleCSS(input, fileDescription.fullModuleName, filePath))
+            let { outCSS: css, outJS: js } = (await this.config.atomic.bundleModuleCSS(fileDescription.packageName, fileDescription.moduleName, input, filePath))
             content = {
               js,
               css
@@ -90,7 +90,7 @@ export class HotReload {
           case FileType.ScriptJS: case FileType.ScriptTS: case FileType.ScriptJSX: case FileType.ScriptTSX: {
             type = CommandType.SCRIPT
             content = {
-              js: (await this.config.atomic.bundleScript(input, fileDescription.fullModuleName)).outJS,
+              js: (await this.config.atomic.bundleScript(fileDescription.packageName, fileDescription.moduleName, input)).outJS,
               moduleName: `${LoaderMethods.ATOMS}/${fileDescription.fullModuleName}`
             } as ScriptContent
             break
@@ -150,7 +150,7 @@ export class HotReload {
       this.sendMessage(client, {
         command: {
           type: CommandType.REFRESH_BUNDLE,
-          content: { version, filenames:[this.config.atomic.config.outScriptFilePath, this.config.atomic.config.outStyleFilePath].map(f=>(parse(f).base)) } as RefreshContent
+          content: { version, filenames: [this.config.atomic.config.outScriptFilePath, this.config.atomic.config.outStyleFilePath].map(f => (parse(f).base)) } as RefreshContent
         }
       })
     })

@@ -21,7 +21,7 @@ defCtxVal("LOAD", "load")
 
 defCtxVal(ATOMIC_REACT, {})
 defCtxVal(DEFINES, {}, this[ATOMIC_REACT])
-defCtxVal(BASE_ATOMS, "the_pkg_here", this[ATOMIC_REACT], null, {writable: true})
+defCtxVal(BASE_ATOMS, "the_pkg_here", this[ATOMIC_REACT], null, { writable: true })
 defCtxVal(ATOMS, {}, this[ATOMIC_REACT])
 defCtxVal(LOAD, (pN) => {
     window.addEventListener(this[ATOMIC_REACT][LIB].AtomicReact.AtomicEvents.LOADED, function (e) {
@@ -91,7 +91,7 @@ defCtxVal("require", function (moduleName, contextPath = "") {
         path = sumPath(contextPath, moduleName)
     } else {
         path = sumPath(ATOMS, `${this[ATOMIC_REACT][BASE_ATOMS]}/${moduleName}`)
-        if(!getValueOfPath(this[ATOMIC_REACT], path.split("/"))) path = sumPath(ATOMS, moduleName)
+        if (!getValueOfPath(this[ATOMIC_REACT], path.split("/"))) path = sumPath(ATOMS, moduleName)
     }
 
     return new Proxy({ path }, {
@@ -160,7 +160,7 @@ defCtxVal("define", function (moduleName, inputs, func) {
 
     /* Save factory path */
     Object.getOwnPropertyNames(_exports).forEach(key => {
-        if(!_exports[key]) return
+        if (!_exports[key]) return
         if ([this[ATOMIC_REACT][LIB].Atom.name].includes(Object.getPrototypeOf(_exports[key])["name"])) {
             Object.defineProperty(_exports[key].prototype, "__factory", { value: `${moduleName}`, configurable: true })
         }
@@ -183,16 +183,19 @@ defCtxVal("define", function (moduleName, inputs, func) {
 
 }, this)
 /* Define Atom */
-defCtxVal("dA", function (moduleName, inputs, func) {
-    return define(`${ATOMS}/${moduleName}`, inputs, func)
+defCtxVal("dA", function (pkgName, moduleName, inputs, func) {
+    const base = this[ATOMIC_REACT][BASE_ATOMS]
+    this[ATOMIC_REACT][BASE_ATOMS] = pkgName
+    define(`${ATOMS}/${pkgName}${(moduleName === "") ? "" : `/${moduleName}`}`, inputs, func)
+    this[ATOMIC_REACT][BASE_ATOMS] = base
 })
 /* Define Module */
 defCtxVal("dM", function (moduleName, inputs, func) {
     return define(`${MODULES}/${moduleName}`, inputs, func)
 })
 /* Define Style  Module CSS */
-defCtxVal("dS", function (moduleName, uniqueID, tokens) {
-    dA(moduleName, ["require", "exports", ATOMIC_REACT], function (require, exports, atomicreact_1) {
+defCtxVal("dS", function (pkgName, moduleName, uniqueID, tokens) {
+    dA(pkgName, moduleName, ["require", "exports", ATOMIC_REACT], function (require, exports, atomicreact_1) {
 
         Object.defineProperties(exports, { "__esModule": { value: true }, "default": { value: {} } });
         tokens
