@@ -232,7 +232,7 @@ export const resolveLibrary = (importPath: string, isPathSpecifier = true): { pa
         } else {
             const pkg = JSON.parse(readFileSync(pkgJsonPath, { encoding: "utf-8" }))
             const packageName = pkg.name
-            let path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, importPath)[0]) : resolvePath(nodeModuleDirPath, importPath, pkg.module)
+            let path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, importPath)[0]) : resolvePath(nodeModuleDirPath, importPath, (pkg.module) ? pkg.module : "")
             let moduleName = normalizeModuleName(importPathParts.slice(i + 1).join("/"))
             if (!isPathSpecifier) {
                 path = resolvePath(nodeModuleDirPath, importPath) //c:/guihgo/node_modules/@pack/packn/src/inputs.tsx
