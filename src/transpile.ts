@@ -11,6 +11,7 @@ import { existsSync, readFileSync } from "fs"
 import { relative, resolve as resolvePath } from "node:path"
 import { parse } from "path"
 import { normalizeModuleName, sumPath } from "./tools/path.js"
+import { statSync } from "node:fs"
 
 export const getFullModuleName = (packageName: string, moduleName: string) => {
     if (moduleName.endsWith("/")) moduleName = moduleName.slice(0, -1)
@@ -232,7 +233,8 @@ export const resolveLibrary = (importPath: string, isPathSpecifier = true): { pa
         } else {
             const pkg = JSON.parse(readFileSync(pkgJsonPath, { encoding: "utf-8" }))
             const packageName = pkg.name
-            let path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, importPath)[0]) : resolvePath(nodeModuleDirPath, importPath, (pkg.module) ? pkg.module : "")
+            let path = resolvePath(nodeModuleDirPath, importPath)
+            path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, importPath)[0]) : (statSync(path).isFile() && existsSync(path)) ? path : resolvePath(path, (pkg.module) ? pkg.module : "")
             let moduleName = normalizeModuleName(importPathParts.slice(i + 1).join("/"))
             if (!isPathSpecifier) {
                 path = resolvePath(nodeModuleDirPath, importPath) //c:/guihgo/node_modules/@pack/packn/src/inputs.tsx
