@@ -144,6 +144,7 @@ export class Client {
 
     static refreshBundle({ version, filenames }: RefreshContent) {
         function addRandomParam(url: string) {
+            if(!url) return url
             const _url = (new URL(url))
             if(filenames.find(fn => url.indexOf(fn) != -1))_url.searchParams.append("atomic_react", version)
             return _url.toString()
