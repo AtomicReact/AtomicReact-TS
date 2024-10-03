@@ -11,7 +11,7 @@ import { error, log, success, tab, warn } from "./tools/console_io.js"
 import { createDirIfNotExist } from "./tools/file.js"
 import { normalizeModuleName } from "./tools/path.js"
 import { transpileAtom, transpileStyle, transpileModule, FileType, listImportTree, getTSConfig, resolveLibrary, getBaseURL } from "./transpile.js"
-import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL, LoaderMethods } from "./constants.js"
+import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL, ATOMICREACT_LIB, LoaderMethods } from "./constants.js"
 
 export * from "./lib.js"
 export * from "./modules/index.js"
@@ -319,7 +319,7 @@ export class Atomic {
 
     }
 
-    appendFileSync(outScriptFilePath, `${ATOMICREACT_GLOBAL}.lib.AtomicReact.setEnv(\`${JSON.stringify(envToAppend)}\`);`)
+    appendFileSync(outScriptFilePath, `${ATOMICREACT_LIB}.setEnv(\`${JSON.stringify(envToAppend)}\`);`)
   }
 
 }

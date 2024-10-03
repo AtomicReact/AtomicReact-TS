@@ -24,13 +24,9 @@ export interface IAtomicElement extends HTMLElement {
         atom: Atom
     }
 }
-interface IHotReload {
-    addrs: string,
-    port: number
-}
+
 export type IAtomicOnLoad = (packageName: string) => void
 export class AtomicReact {
-    static hotReload: IHotReload
 
     static onLoads: Array<IAtomicOnLoad> = []
 

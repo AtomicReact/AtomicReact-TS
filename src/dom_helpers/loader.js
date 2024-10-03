@@ -51,6 +51,11 @@ defCtxVal("gotoEndOfPath", function (context, next, paths, contextPath = "") {
 })
 
 defCtxVal("getValueOfPath", function getValueOfPath(context, splitedPaths) {
+    if(splitedPaths[splitedPaths.length-1]==="") {
+        splitedPaths.pop()
+        splitedPaths[splitedPaths.length-1] = splitedPaths[splitedPaths.length-1] + "/"
+    }
+
     if (splitedPaths.length == 1) {
         return context[splitedPaths[0]] || null
     }
@@ -79,12 +84,13 @@ defCtxVal("sumPath", function (absolutePath, relativePath) {
 })
 
 defCtxVal("require", function (moduleName, contextPath = "") {
-
     const moduleParts = moduleName.split("/")
     if (ATOMIC_REACT_ALIAS.includes(moduleParts[0])) {
         if (moduleParts.length == 1) return (this[ATOMIC_REACT][LIB] || this[ATOMIC_REACT])
         else return getValueOfPath(this, moduleParts)
     }
+
+    if (contextPath.split("/")[0] === ATOMS) moduleName = moduleName + "/"
 
     let path = ""
     if (moduleName.startsWith(".")) {
@@ -108,18 +114,17 @@ defCtxVal("define", function (moduleName, inputs, func) {
 
     if (ATOMIC_REACT_ALIAS.includes(moduleName) && !ATOMIC_REACT[moduleName]) {
         func(require, _exports, ...inputs.slice(2).map(i => require(i)))
-
-        defCtxVal("lib", _exports, this[ATOMIC_REACT])
-        defCtxVal("AtomicReact", this[ATOMIC_REACT].lib.AtomicReact)
+        defCtxVal(LIB, _exports, this[ATOMIC_REACT])
+        defCtxVal("AtomicReact", this[ATOMIC_REACT][LIB].AtomicReact)
         defCtxVal("global", this[ATOMIC_REACT], AtomicReact)
-        defCtxVal("JSX", this[ATOMIC_REACT].lib.JSX)
+        defCtxVal("JSX", this[ATOMIC_REACT][LIB].JSX)
 
         return
     }
 
     const paths = moduleName.split("/")
 
-    const endOfPath = gotoEndOfPath(this, ATOMIC_REACT, paths)
+    const endOfPath = gotoEndOfPath(this, ATOMIC_REACT, [...paths])
     let context = endOfPath.context
     let path = endOfPath.path
     let contextPath = endOfPath.contextPath
@@ -156,7 +161,7 @@ defCtxVal("define", function (moduleName, inputs, func) {
     }
 
     /* Declare this atom */
-    Object.defineProperty(context, path, { value: _exports, configurable: true })
+    Object.defineProperty(context, `${path}${(paths[0] === ATOMS) ? "/" : ""}`, { value: _exports, configurable: true })
 
     /* Save factory path */
     Object.getOwnPropertyNames(_exports).forEach(key => {

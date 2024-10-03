@@ -1,5 +1,6 @@
 export const ATOMICREACT_CORE_MIN_JS_FILENAME = "atomicreact-core.min.js"
 export const ATOMICREACT_GLOBAL = "atomicreact"
+export const ATOMICREACT_LIB = "AtomicReact"
 
 export enum LoaderMethods {
     DEFINE = "define",
@@ -8,5 +9,6 @@ export enum LoaderMethods {
     DEFINE_STYLE = "dS",
     ATOMS = "atoms",
     MODULES = "modules",
-    BASE_ATOMS = "baseAtoms"
+    BASE_ATOMS = "baseAtoms",
+    LIB = "lib"
 }

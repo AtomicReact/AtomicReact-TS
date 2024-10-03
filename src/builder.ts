@@ -10,7 +10,7 @@ import { cpSync, readFileSync, statSync, writeFileSync } from "fs"
 import { getTranspileOptions } from "./transpile.js"
 import { error, log, success, tab } from "./tools/console_io.js"
 import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL } from "./constants.js"
-import { exec, execSync, spawn, spawnSync } from "child_process"
+import { exec } from "child_process"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const __filename = fileURLToPath(import.meta.url)
