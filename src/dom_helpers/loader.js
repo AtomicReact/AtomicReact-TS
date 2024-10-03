@@ -161,13 +161,14 @@ defCtxVal("define", function (moduleName, inputs, func) {
     }
 
     /* Declare this atom */
-    Object.defineProperty(context, `${path}${(paths[0] === ATOMS) ? "/" : ""}`, { value: _exports, configurable: true })
+    const moduleSufix = (paths[0] === ATOMS) ? "/" : ""
+    Object.defineProperty(context, `${path}${moduleSufix}`, { value: _exports, configurable: true })
 
     /* Save factory path */
     Object.getOwnPropertyNames(_exports).forEach(key => {
         if (!_exports[key]) return
         if ([this[ATOMIC_REACT][LIB].Atom.name].includes(Object.getPrototypeOf(_exports[key])["name"])) {
-            Object.defineProperty(_exports[key].prototype, "__factory", { value: `${moduleName}`, configurable: true })
+            Object.defineProperty(_exports[key].prototype, "__factory", { value: `${moduleName}${moduleSufix}`, configurable: true })
         }
     })
 

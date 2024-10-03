@@ -91,7 +91,7 @@ export class HotReload {
             type = CommandType.SCRIPT
             content = {
               js: (await this.config.atomic.bundleScript(fileDescription.packageName, fileDescription.moduleName, input)).outJS,
-              moduleName: `${LoaderMethods.ATOMS}/${fileDescription.fullModuleName}`
+              moduleName: `${LoaderMethods.ATOMS}/${fileDescription.fullModuleName}/`
             } as ScriptContent
             break
           }
