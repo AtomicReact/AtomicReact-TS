@@ -2,5 +2,5 @@
 import * as HotReload from "./hot_reload/index.js"
 
 export const Modules = {
-    ...HotReload
+    HotReload: HotReload.HotReload
 }
