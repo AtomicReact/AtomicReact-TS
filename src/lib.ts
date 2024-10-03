@@ -53,7 +53,16 @@ export class AtomicReact {
         LOADED: EAtomicEvent.LOADED
     }
 
-    static global: object /* @TODO: to type global atomicreact: {atoms, modules, ...}  */
+    static global: {
+        atoms: object,
+        modules: {
+            [moduleName: string]: {
+                lib: {
+                    __config: any
+                }
+            }
+        }
+    }
 
     static env: Record<string, string | object> = {}
     static setEnv(_env: string | Record<string, string | object>) {
