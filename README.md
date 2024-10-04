@@ -19,7 +19,9 @@ AtomicReact-TS is a framework to build Web Apps with atomicity concept using Typ
 
 ## Let's Get Started
 
-@TODO yet, but you can see a simple project at [https://github.com/AtomicReact/simple-frontend](https://github.com/AtomicReact/simple-frontend)
+@TODO, but for now you can see others simple examples:
+- A playground with simple examples: [https://stackblitz.com/edit/atomicreact-ts-playground?file=src%2Fapp.tsx](https://stackblitz.com/edit/atomicreact-ts-playground?file=src%2Fapp.tsx)
+- A simple project at [https://github.com/AtomicReact/simple-frontend](https://github.com/AtomicReact/simple-frontend)
 
 ## Requirements
 1. [NodeJs](https://nodejs.org)
