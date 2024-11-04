@@ -111,7 +111,7 @@ export const normalizeFilePath = (filePath: string): { type: FileType, filePathA
     }
 }
 
-interface IFileDescription {
+export interface IFileDescription {
     hashFilePath: string
     path: string,
     type: FileType,
@@ -122,7 +122,7 @@ interface IFileDescription {
     imports: Array<string> /* array of filePathHash */
 }
 
-interface IMapImportTree {
+export interface IMapImportTree {
     [filePathHash: string]: IFileDescription
 }
 

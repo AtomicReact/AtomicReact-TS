@@ -10,7 +10,7 @@ import { minify } from "terser"
 import { error, log, success, tab, warn } from "./tools/console_io.js"
 import { createDirIfNotExist } from "./tools/file.js"
 import { normalizeModuleName } from "./tools/path.js"
-import { transpileAtom, transpileStyle, transpileModule, FileType, listImportTree, getTSConfig, resolveLibrary, getBaseURL } from "./transpile.js"
+import { transpileAtom, transpileStyle, transpileModule, FileType, listImportTree, getTSConfig, resolveLibrary, getBaseURL, IFileDescription } from "./transpile.js"
 import { ATOMICREACT_CORE_MIN_JS_FILENAME, ATOMICREACT_GLOBAL, ATOMICREACT_LIB, LoaderMethods } from "./constants.js"
 
 export * from "./lib.js"
@@ -43,13 +43,15 @@ export interface IAtomicConfig {
 
 export const ENVIROMENT_VARIABLE_PREFIX = "ATOMIC_REACT_APP_"
 
-type BeforeBundleCallback = () => Promise<void>
+type BeforeBundleCallback = (fileDescription: IFileDescription[]) => Promise<void | IFileDescription[]>
+type AfterBundleCallback = (fileDescription: IFileDescription[]) => Promise<void | IFileDescription[]>
 
 export class Atomic {
 
   public indexScriptDirPath: string
 
   private todoBeforeBundle: Array<BeforeBundleCallback> = []
+  private todoAfterBundle: Array<AfterBundleCallback> = []
 
   constructor(public config: IAtomicConfig) {
 
@@ -120,9 +122,9 @@ export class Atomic {
 
     writeFileSync(this.config.outStyleFilePath, "")
 
-    const filesDescription = listImportTree(this.config.indexScriptFilePath, this.config.packageName, this.getModuleName(this.config.indexScriptFilePath), true, getBaseURL(process.cwd()))
+    let filesDescription = listImportTree(this.config.indexScriptFilePath, this.config.packageName, this.getModuleName(this.config.indexScriptFilePath), true, getBaseURL(process.cwd()))
 
-    await this.doBeforeBundle()
+    filesDescription = await this.doBeforeBundle(filesDescription)
 
     /* Bundle User's Package */
 
@@ -183,6 +185,7 @@ export class Atomic {
     version = version.digest("hex").slice(0, 7)
     success(`${tab}└── Bundled ${filesDescription.length} files. Version: #${version}`)
 
+    filesDescription = await this.doAfterBundle(filesDescription)
 
     return { version }
   }
@@ -289,14 +292,25 @@ export class Atomic {
     })
   }
 
-  beforeBundle(todoBeforeLoad: BeforeBundleCallback) {
-    this.todoBeforeBundle.push(todoBeforeLoad)
+  beforeBundle(todoBeforeBundle: BeforeBundleCallback) {
+    this.todoBeforeBundle.push(todoBeforeBundle)
+  }
+  afterBundle(todoAfterBundle: AfterBundleCallback) {
+    this.todoAfterBundle.push(todoAfterBundle)
   }
 
-  private async doBeforeBundle() {
+  private async doBeforeBundle(fileDescription: IFileDescription[]) {
     for (let f of this.todoBeforeBundle) {
-      await f()
+      fileDescription = await f(fileDescription) || fileDescription
     }
+    return fileDescription
+  }
+
+  private async doAfterBundle(fileDescription: IFileDescription[]) {
+    for (let f of this.todoAfterBundle) {
+      fileDescription = await f(fileDescription) || fileDescription
+    }
+    return fileDescription
   }
 
   appendLoadScript(outScriptFilePath: string) {
