@@ -1,6 +1,6 @@
 import { AtomicReact, IAtomicElement } from "../../lib.js"
 
-declare function getValueOfPath(context, paths): Object /* Global function defined in dom_helpers/loader.js */
+
 export interface IClientConfig {
     host?: string,
     port?: number,

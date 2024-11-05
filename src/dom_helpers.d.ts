@@ -1,0 +1,1 @@
+declare function getValueOfPath(context, paths): Object /* Global function defined in dom_helpers/loader.js */

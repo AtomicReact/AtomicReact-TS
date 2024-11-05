@@ -172,6 +172,24 @@ export class AtomicReact {
         return rootAtom
     }
 
+    static reRender(atom: Atom) {
+        const AtomClass = getValueOfPath(AtomicReact.global, atom.__factory.split("/"))[atom.constructor.name]
+        
+        const newAtom = new AtomClass(atom.prop, atom.id)
+        if (atom.__nucleus_children) Object.defineProperty(newAtom, "__nucleus_children", { value: atom.__nucleus_children })
+
+        let attrs = {}
+
+        Object.values(AtomicReact.ClientVariables).forEach((attrName) => {
+            const attrValue = atom.getElement().attributes.getNamedItem(attrName)
+            if (attrValue) { attrs[attrName] = attrValue.value }
+        })
+
+        AtomicReact.renderElement(newAtom, atom.getElement(), "replace", attrs)
+
+        if (atom.__nucleus_children) newAtom.nucleus.innerHTML = newAtom.__nucleus_children
+    }
+
 
     static getSub(atom: Atom, subName: string | number): HTMLElement {
         return document.querySelector(`[${AtomicReact.ClientVariables.SubOf}="${atom.id}"][${AtomicReact.ClientVariables.Sub}="${subName}"]`)
@@ -248,6 +266,10 @@ export class Atom<GAtom extends IAtom = IAtom> {
         return AtomicReact.getNucleus(this)
     }
 
+    reRender() {
+        return AtomicReact.reRender(this)
+    }
+
     /* Event fired when this Atom is rendered. */
     onRender() { }
     /* Event fired when another Atom is added inside this Atom */
@@ -297,7 +319,7 @@ export const JSX = {
             }
 
             if (props["children"] === undefined) props["children"] = []
-            if(!Array.isArray(props["children"])) props["children"] = [props["children"]]
+            if (!Array.isArray(props["children"])) props["children"] = [props["children"]]
 
             let attributes = Object.keys(props)
                 .map(key => {
