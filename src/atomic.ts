@@ -23,7 +23,7 @@ export * from "./tools/path.js"
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const __filename = fileURLToPath(import.meta.url)
 
-export type IAtomicEnv = Record<string, string | number | boolean>
+export type IAtomicEnv = Record<string, string | number | boolean | undefined>
 export interface IAtomicConfig {
   indexScriptFilePath: string,
 
