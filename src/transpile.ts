@@ -1,4 +1,7 @@
 import { createHash } from "node:crypto"
+import { existsSync, readFileSync } from "fs"
+import { relative, resolve as resolvePath } from "node:path"
+
 import TS, { ExportDeclaration, ImportDeclaration, transpile, TranspileOptions } from "typescript"
 import { ATOMICREACT_GLOBAL, LoaderMethods } from "./constants.js"
 const { ModuleKind, JsxEmit, ScriptTarget, ModuleResolutionKind, transpileModule: transpileModuleTS, createSourceFile, createSourceMapSource, SyntaxKind } = TS
@@ -7,10 +10,8 @@ const { ModuleKind, JsxEmit, ScriptTarget, ModuleResolutionKind, transpileModule
 // import { parse } from "node:path"
 // import * as PackageResolver from "package-exports-resolver-kernel"
 import { resolve } from "resolve.exports"
-import { existsSync, readFileSync } from "fs"
-import { relative, resolve as resolvePath } from "node:path"
 import { parse } from "path"
-import { normalizeModuleName, sumPath } from "./tools/path.js"
+import { normalizeModuleName, sumPath, upDir } from "./tools/path.js"
 import { statSync } from "node:fs"
 
 export const getFullModuleName = (packageName: string, moduleName: string) => {
@@ -220,10 +221,20 @@ export const listImportTree = (filePath: string, packageName: string, moduleName
     return Object.values(mapImportTree(filePath, packageName, moduleName, recursive, {}, baseURL)).reverse()
 }
 
-export const resolveLibrary = (importPath: string, isPathSpecifier = true): { packageName: string, path: string, moduleName: string, package: any, dirPath: string, baseURL: string } => {
-    const nodeModuleDirPath = resolvePath(process.cwd(), "node_modules")
-    if (!isPathSpecifier) importPath = relative(nodeModuleDirPath, importPath)
-    const importPathParts = importPath.replaceAll("\\", "/").split("/")
+export const resolveNodeModulePath = (processCWD = process.cwd()): string => {
+    let nodeModuleDirPath = resolvePath(processCWD, "node_modules")
+    if (existsSync(nodeModuleDirPath)) return nodeModuleDirPath
+
+    processCWD = upDir(processCWD)
+    if (!processCWD) throw new Error("Directory of node_modules not found")
+    return resolveNodeModulePath(processCWD)
+}
+
+export const resolveLibrary = (importPath: string, isPathSpecifier = true, processCWD = process.cwd()): { packageName: string, path: string, moduleName: string, package: any, dirPath: string, baseURL: string } => {
+    const nodeModuleDirPath = resolveNodeModulePath(processCWD)
+    let _importPath = importPath
+    if (!isPathSpecifier) _importPath = relative(nodeModuleDirPath, importPath)
+    const importPathParts = _importPath.replaceAll("\\", "/").split("/")
     let moduleDirPath = nodeModuleDirPath
     for (let i = 0; i < importPathParts.length; i++) {
         moduleDirPath = resolvePath(moduleDirPath, importPathParts[i])
@@ -233,12 +244,12 @@ export const resolveLibrary = (importPath: string, isPathSpecifier = true): { pa
         } else {
             const pkg = JSON.parse(readFileSync(pkgJsonPath, { encoding: "utf-8" }))
             const packageName = pkg.name
-            let path = resolvePath(nodeModuleDirPath, importPath)
-            path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, importPath)[0]) : (statSync(path).isFile() && existsSync(path)) ? path : resolvePath(path, (pkg.module) ? pkg.module : "")
+            let path = resolvePath(nodeModuleDirPath, _importPath)
+            path = (pkg.exports) ? resolvePath(moduleDirPath, resolve(pkg, _importPath)[0]) : (statSync(path).isFile() && existsSync(path)) ? path : resolvePath(path, (pkg.module) ? pkg.module : "")
             let moduleName = normalizeModuleName(importPathParts.slice(i + 1).join("/"))
             if (!isPathSpecifier) {
-                path = resolvePath(nodeModuleDirPath, importPath) //c:/guihgo/node_modules/@pack/packn/src/inputs.tsx
-                moduleName = normalizeModuleName(relative(`${packageName}/${resolve(pkg, "/")[0]}`, importPath))
+                path = resolvePath(nodeModuleDirPath, _importPath) //c:/guihgo/node_modules/@pack/packn/src/inputs.tsx
+                moduleName = normalizeModuleName(relative(`${packageName}/${resolve(pkg, "/")[0]}`, _importPath))
             }
 
             return {
@@ -251,6 +262,7 @@ export const resolveLibrary = (importPath: string, isPathSpecifier = true): { pa
             }
         }
     }
+    return resolveLibrary(importPath, isPathSpecifier, upDir(processCWD))
 }
 
 export const getBaseURL = (packageDirPath = process.cwd()) => {

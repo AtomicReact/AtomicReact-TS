@@ -15,7 +15,7 @@ AtomicReact-TS is a framework to build Web Apps with atomicity concept using Typ
 5. CSS modules
 6. Shallow learning curve
 7. Modular HotReload: fast refresh - no hard/live reload
-8. Light-weight web framework: ~9.295 KBytes  (last build)
+8. Light-weight web framework: ~9.819 KBytes  (last build)
 
 ## Let's Get Started
 
