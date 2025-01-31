@@ -220,11 +220,11 @@ export class AtomicReact {
         }
     }
 }
-interface IAtomProps extends IProps {
+export interface IAtomProps extends IProps {
     sub?: any,
     nucleus?: boolean
 }
-interface IAtom {
+export interface IAtom {
     prop?: IAtomProps,
     sub?: any
 }
